@@ -26,7 +26,7 @@ type commonFlags struct {
 func (c *commonFlags) register(fs *flag.FlagSet, defaultFormat string) {
 	fs.StringVar(&c.configPath, "config", "", "path to jackproof.yaml (default: jackproof.yaml in the first path)")
 	fs.StringVar(&c.rulesDir, "rules-dir", "", "directory with additional rule files")
-	fs.StringVar(&c.format, "format", defaultFormat, "output format: text, json, sarif or md")
+	fs.StringVar(&c.format, "format", defaultFormat, "output format: text, json, sarif, md or html")
 	fs.StringVar(&c.minConfidence, "min-confidence", "", "hide findings below this confidence: high, medium or low")
 	fs.StringVar(&c.failOn, "fail-on", "high", "exit with status 1 when a finding has at least this severity")
 }
