@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"go.yaml.in/yaml/v3"
 )
 
 const repositoryRoot = "../.."
@@ -208,5 +210,99 @@ func TestCommitMessageHook(t *testing.T) {
 				t.Errorf("hook error = %v, want rejection = %v", err, tt.reject)
 			}
 		})
+	}
+}
+
+func readYAML(t *testing.T, name string) map[string]any {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(repositoryRoot, name))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var document map[string]any
+	if err := yaml.Unmarshal(data, &document); err != nil {
+		t.Fatalf("%s: %v", name, err)
+	}
+	return document
+}
+
+func TestGitHubAction(t *testing.T) {
+	action := readYAML(t, "action.yml")
+	inputs := action["inputs"].(map[string]any)
+	for _, name := range []string{"version", "fail-on", "strict", "comment", "upload-sarif", "github-token"} {
+		if _, ok := inputs[name]; !ok {
+			t.Errorf("action input %q is missing", name)
+		}
+	}
+	if inputs["strict"].(map[string]any)["default"] != "false" {
+		t.Error("strict mode must be off by default")
+	}
+	if action["runs"].(map[string]any)["using"] != "composite" {
+		t.Error("the action must be a composite action")
+	}
+	data, _ := os.ReadFile(filepath.Join(repositoryRoot, "action.yml"))
+	for _, want := range []string{"jackproof\" diff", "upload-sarif", "pr-comment.sh", "--fail-on"} {
+		if !strings.Contains(string(data), want) {
+			t.Errorf("action.yml lacks %q", want)
+		}
+	}
+	script, err := os.ReadFile(filepath.Join(repositoryRoot, "scripts", "pr-comment.sh"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(script), "<!-- jackproof -->") || !strings.Contains(string(script), "PATCH") {
+		t.Error("the comment script must update an existing comment that carries the marker")
+	}
+}
+
+func TestPreCommitHook(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join(repositoryRoot, ".pre-commit-hooks.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var hooks []map[string]any
+	if err := yaml.Unmarshal(data, &hooks); err != nil {
+		t.Fatal(err)
+	}
+	if len(hooks) != 1 || hooks[0]["id"] != "jackproof-scan" || !strings.Contains(hooks[0]["entry"].(string), "scan --staged") || hooks[0]["language"] != "golang" {
+		t.Errorf("hooks = %+v", hooks)
+	}
+}
+
+func TestReleaseConfiguration(t *testing.T) {
+	config := readYAML(t, ".goreleaser.yaml")
+	if config["version"] != 2 {
+		t.Errorf("version = %v", config["version"])
+	}
+	build := config["builds"].([]any)[0].(map[string]any)
+	if got := build["goos"].([]any); len(got) != 3 {
+		t.Errorf("goos = %v", got)
+	}
+	if got := build["goarch"].([]any); len(got) != 2 {
+		t.Errorf("goarch = %v", got)
+	}
+	if env := build["env"].([]any); len(env) != 1 || env[0] != "CGO_ENABLED=0" {
+		t.Errorf("env = %v", env)
+	}
+	for _, key := range []string{"checksum", "sboms", "brews", "archives"} {
+		if _, ok := config[key]; !ok {
+			t.Errorf("%s is missing from the release configuration", key)
+		}
+	}
+	if config["release"].(map[string]any)["draft"] != true {
+		t.Error("releases must be drafts until the owner publishes them")
+	}
+}
+
+func TestDockerfile(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join(repositoryRoot, "Dockerfile"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	for _, want := range []string{"gcr.io/distroless/static-debian12:nonroot", "USER nonroot:nonroot", "CGO_ENABLED=0", "ENTRYPOINT"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("Dockerfile lacks %q", want)
+		}
 	}
 }

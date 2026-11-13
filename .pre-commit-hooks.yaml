@@ -1,0 +1,8 @@
+- id: jackproof-scan
+  name: jackproof scan
+  description: Find LLM credentials in the staged files and the workloads that can read them.
+  entry: jackproof scan --staged --fail-on high
+  language: golang
+  pass_filenames: false
+  always_run: true
+  stages: [pre-commit]
