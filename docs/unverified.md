@@ -39,7 +39,6 @@ The patterns that recognise a provider's keys. A wrong pattern causes missed key
 - groq, format api-key
 - mistral, format api-key
 - cohere, format api-key
-- openrouter, format api-key
 - xai, format api-key
 - deepseek, format api-key
 - huggingface, format access-token
@@ -61,7 +60,7 @@ The read-only request that `jackproof exposure verify` sends. The status codes t
 - groq: GET https://api.groq.com/openai/v1/models with bearer authentication
 - mistral: GET https://api.mistral.ai/v1/models with bearer authentication
 - cohere: GET https://api.cohere.com/v1/models with bearer authentication
-- openrouter: GET https://openrouter.ai/api/v1/auth/key with bearer authentication
+- openrouter: GET https://openrouter.ai/api/v1/key with bearer authentication
 - xai: GET https://api.x.ai/v1/models with bearer authentication
 - deepseek: GET https://api.deepseek.com/models with bearer authentication
 - huggingface: GET https://huggingface.co/api/whoami-v2 with bearer authentication
@@ -101,19 +100,6 @@ The constructor calls that `scan` treats as use of a provider.
 
 The action names, permissions and managed roles that `posture` uses to decide what an identity can do.
 
-- capability:aws/bedrock/enable-model-access
-- capability:gcp/vertex-ai/enable-model-access
-- capability:gcp/gemini-api/enable-model-access
-- capability:azure/azure-openai/enable-model-access
-- capability:aws/bedrock/invoke-model
-- capability:gcp/vertex-ai/invoke-model
-- capability:azure/azure-openai/invoke-model
-- capability:aws/bedrock/disable-invocation-logging
-- capability:aws/iam/create-credential
-- capability:gcp/iam/create-credential
-- managed-policy:arn:aws:iam::aws:policy/AdministratorAccess
-- managed-policy:arn:aws:iam::aws:policy/AmazonBedrockFullAccess
-- managed-policy:arn:aws:iam::aws:policy/IAMFullAccess
 - managed-policy:arn:aws:iam::aws:policy/PowerUserAccess
 - gcp-role:roles/owner
 - gcp-role:roles/editor

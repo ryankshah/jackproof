@@ -64,7 +64,7 @@ Credential graph
 Coverage
   files scanned: 1 (dotenv 1)
   rules not verified against provider documentation: JP-KEY-001
-  not verified against provider documentation: 18 provider key formats, 25 SDK client patterns
+  not verified against provider documentation: 17 provider key formats, 25 SDK client patterns
 ```
 
 Add a Compose file, Kubernetes manifest, GitHub Actions workflow, Dockerfile or Terraform and the graph also lists each holder, its environment and whether it may run untrusted code.
@@ -110,7 +110,7 @@ MEDIUM   JP-POS-002  No AWS guardrail denies model services in the scanned infra
 Coverage
   files scanned: 1 (terraform 1)
   rules not verified against provider documentation: JP-POS-001, JP-POS-002, JP-POS-003, JP-POS-004, JP-POS-005, JP-POS-006, JP-POS-007
-  not verified against provider documentation: 25 cloud permission entries
+  not verified against provider documentation: 12 cloud permission entries
 ```
 
 Each finding ships a ready-to-apply snippet in the `md`, `json` and `html` formats and in `jackproof explain`: a service control policy, an organization policy, a budget block or a logging configuration.
@@ -154,7 +154,7 @@ If it is abused: Model inference billed to the Anthropic workspace or organizati
 Coverage
   files scanned: 1 (dotenv 1)
   rules not verified against provider documentation: JP-KEY-001
-  not verified against provider documentation: 18 provider key formats, 25 SDK client patterns
+  not verified against provider documentation: 17 provider key formats, 25 SDK client patterns
 ```
 
 To check that the old key is dead, run `jackproof exposure verify --keys-stdin --verify-live --i-own-these-keys`. It sends one read-only metadata request per key and never calls a model. A rejected result is the only proof that a key is dead.
@@ -211,9 +211,9 @@ Exit code 0 means no finding at or above `--fail-on` (default `high`), 1 means f
 - Provider key formats, cloud permission names and log event names are marked `verified: false` until they are confirmed against official documentation. [docs/unverified.md](docs/unverified.md) lists them, and affected findings carry the `unverified-rule` flag.
 - `scan` and `posture` are static analysis. Terraform is evaluated on a best-effort basis. Values from modules, remote state and runtime inputs are not resolved.
 - Context-only keys, which have no distinctive prefix, are matched by variable name and reported with medium confidence.
-- `posture` reads infrastructure code only. It has no live mode yet. Guardrails, budgets and quotas defined outside the scanned paths are reported as incomplete.
+- `posture` reads infrastructure code. Its opt-in `--live` mode makes one signed, read-only request that checks AWS Bedrock invocation logging in one region. It has no other live checks and does not cover GCP or Azure. Guardrails, budgets and quotas defined outside the scanned paths are reported as incomplete.
 - `hunt` analyses exported logs. The Azure Activity Log does not record model invocations, so Azure coverage is limited to enablement and key operations.
-- The only network calls are the opt-in checks of `exposure verify`.
+- The only network calls are the opt-in checks of `exposure verify` and `posture --live`.
 
 ## Contributing rules
 

@@ -285,8 +285,8 @@ func TestProviderForName(t *testing.T) {
 func TestUnverifiedExcludesVerifiedFormats(t *testing.T) {
 	catalogue := loadCatalogue(t)
 	for _, entry := range catalogue.Unverified() {
-		if entry.Provider == "aws" && entry.Format == "access-key-id" {
-			t.Error("aws access-key-id is verified and must not be listed")
+		if (entry.Provider == "aws" && entry.Format == "access-key-id") || (entry.Provider == "openrouter" && entry.Format == "api-key") {
+			t.Errorf("%s %s is verified and must not be listed", entry.Provider, entry.Format)
 		}
 	}
 	if len(catalogue.Unverified()) == 0 {

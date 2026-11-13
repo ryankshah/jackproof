@@ -6,26 +6,26 @@ capabilities:
       - aws-marketplace:Subscribe
       - bedrock:PutFoundationModelEntitlement
       - bedrock:CreateFoundationModelAgreement
-    verified: false
+    verified: true
   - name: enable-model-access
     cloud: gcp
     service: vertex-ai
     actions:
       - serviceusage.services.enable
-    verified: false
+    verified: true
   - name: enable-model-access
     cloud: gcp
     service: gemini-api
     actions:
       - serviceusage.services.enable
-    verified: false
+    verified: true
   - name: enable-model-access
     cloud: azure
     service: azure-openai
     actions:
       - Microsoft.CognitiveServices/accounts/write
       - Microsoft.CognitiveServices/accounts/deployments/write
-    verified: false
+    verified: true
   - name: invoke-model
     cloud: aws
     service: bedrock
@@ -34,50 +34,50 @@ capabilities:
       - bedrock:InvokeModelWithResponseStream
       - bedrock:Converse
       - bedrock:ConverseStream
-    verified: false
+    verified: true
   - name: invoke-model
     cloud: gcp
     service: vertex-ai
     actions:
       - aiplatform.endpoints.predict
-    verified: false
+    verified: true
   - name: invoke-model
     cloud: azure
     service: azure-openai
     actions:
       - Microsoft.CognitiveServices/accounts/OpenAI/deployments/chat/completions/action
-    verified: false
+    verified: true
   - name: disable-invocation-logging
     cloud: aws
     service: bedrock
     actions:
       - bedrock:DeleteModelInvocationLoggingConfiguration
       - bedrock:PutModelInvocationLoggingConfiguration
-    verified: false
+    verified: true
   - name: create-credential
     cloud: aws
     service: iam
     actions:
       - iam:CreateAccessKey
-    verified: false
+    verified: true
   - name: create-credential
     cloud: gcp
     service: iam
     actions:
       - iam.serviceAccountKeys.create
-    verified: false
+    verified: true
 
 managed_policies:
   - arn: arn:aws:iam::aws:policy/AdministratorAccess
     actions: ["*"]
     admin: true
-    verified: false
+    verified: true
   - arn: arn:aws:iam::aws:policy/AmazonBedrockFullAccess
     actions: ["bedrock:*"]
-    verified: false
+    verified: true
   - arn: arn:aws:iam::aws:policy/IAMFullAccess
     actions: ["iam:*"]
-    verified: false
+    verified: true
   - arn: arn:aws:iam::aws:policy/PowerUserAccess
     actions: ["bedrock:*", "aws-marketplace:*"]
     verified: false
