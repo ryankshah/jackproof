@@ -26,6 +26,7 @@ type Provider struct {
 	Name    string   `yaml:"name"`
 	EnvVars []string `yaml:"env_vars"`
 	Refs    []string `yaml:"refs"`
+	Reach   string   `yaml:"reach"`
 	Formats []Format `yaml:"formats"`
 }
 
@@ -58,6 +59,9 @@ func parseCatalogue(data []byte) (*Catalogue, error) {
 		provider := &catalogue.providers[i]
 		if provider.ID == "" || provider.Name == "" {
 			return nil, fmt.Errorf("provider %d needs an id and a name", i)
+		}
+		if provider.Reach == "" {
+			return nil, fmt.Errorf("provider %q has no reach description", provider.ID)
 		}
 		if seen[provider.ID] {
 			return nil, fmt.Errorf("duplicate provider id %q", provider.ID)
@@ -104,6 +108,15 @@ func compileFormat(provider *Provider, format Format) (*regexp.Regexp, error) {
 
 func (c *Catalogue) Providers() []Provider {
 	return append([]Provider(nil), c.providers...)
+}
+
+func (c *Catalogue) Provider(id string) (Provider, bool) {
+	for _, provider := range c.providers {
+		if provider.ID == id {
+			return provider, true
+		}
+	}
+	return Provider{}, false
 }
 
 func (c *Catalogue) ProviderForEnvVar(name string) (string, bool) {

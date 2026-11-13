@@ -208,13 +208,14 @@ func TestParseCatalogueErrors(t *testing.T) {
 		yaml string
 	}{
 		{"invalid yaml", "- id: [unclosed"},
-		{"unknown field", "- id: a\n  name: A\n  bogus: 1\n  formats:\n    - {name: k, pattern: 'a+'}\n"},
-		{"missing id", "- name: A\n  formats:\n    - {name: k, pattern: 'a+'}\n"},
-		{"duplicate id", "- {id: a, name: A, formats: [{name: k, pattern: 'a+'}]}\n- {id: a, name: B, formats: [{name: k, pattern: 'b+'}]}\n"},
-		{"no formats", "- id: a\n  name: A\n"},
-		{"bad regex", "- {id: a, name: A, formats: [{name: k, pattern: '('}]}\n"},
-		{"missing pattern", "- {id: a, name: A, formats: [{name: k}]}\n"},
-		{"context without env vars", "- {id: a, name: A, formats: [{name: k, pattern: 'a+', context: true}]}\n"},
+		{"unknown field", "- id: a\n  name: A\n  reach: r\n  bogus: 1\n  formats:\n    - {name: k, pattern: 'a+'}\n"},
+		{"missing id", "- name: A\n  reach: r\n  formats:\n    - {name: k, pattern: 'a+'}\n"},
+		{"missing reach", "- {id: a, name: A, formats: [{name: k, pattern: 'a+'}]}\n"},
+		{"duplicate id", "- {id: a, name: A, reach: r, formats: [{name: k, pattern: 'a+'}]}\n- {id: a, name: B, reach: r, formats: [{name: k, pattern: 'b+'}]}\n"},
+		{"no formats", "- id: a\n  name: A\n  reach: r\n"},
+		{"bad regex", "- {id: a, name: A, reach: r, formats: [{name: k, pattern: '('}]}\n"},
+		{"missing pattern", "- {id: a, name: A, reach: r, formats: [{name: k}]}\n"},
+		{"context without env vars", "- {id: a, name: A, reach: r, formats: [{name: k, pattern: 'a+', context: true}]}\n"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
