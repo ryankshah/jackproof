@@ -54,7 +54,7 @@ func TestEmbeddedRulesAreWellFormed(t *testing.T) {
 			if len(rule.Refs) == 0 {
 				t.Error("rule has no references")
 			}
-			for _, banned := range []string{"!", "2014", "simply", "robust", "powerful", "seamless", "leverage", "comprehensive"} {
+			for _, banned := range []string{"!", string(rune(0x2014)), "simply", "robust", "powerful", "seamless", "leverage", "comprehensive"} {
 				for _, text := range []string{rule.Title, rule.Description, rule.Remediation} {
 					if strings.Contains(strings.ToLower(text), banned) {
 						t.Errorf("text contains banned content %q", banned)
