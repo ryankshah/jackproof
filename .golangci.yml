@@ -1,0 +1,36 @@
+version: "2"
+
+run:
+  go: "1.26"
+  tests: true
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - errorlint
+    - wastedassign
+    - unparam
+    - misspell
+    - gocritic
+    - revive
+  settings:
+    revive:
+      rules:
+        - name: unused-parameter
+        - name: unused-receiver
+        - name: error-return
+        - name: error-naming
+        - name: indent-error-flow
+        - name: superfluous-else
+        - name: var-declaration
+  exclusions:
+    generated: lax
+
+formatters:
+  enable:
+    - gofmt

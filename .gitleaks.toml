@@ -1,0 +1,12 @@
+title = "jackproof"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Test fixtures contain synthetic credentials assembled from fragments"
+paths = [
+  '''fixtures/.*''',
+  '''.*\.jpfixture$''',
+  '''.*_test\.go$''',
+]
