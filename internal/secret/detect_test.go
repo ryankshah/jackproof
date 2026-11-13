@@ -256,6 +256,35 @@ func TestCatalogueLookups(t *testing.T) {
 	}
 }
 
+func TestProviderForName(t *testing.T) {
+	catalogue := loadCatalogue(t)
+	tests := []struct {
+		name         string
+		wantProvider string
+		wantOK       bool
+	}{
+		{"OPENAI_API_KEY", "openai", true},
+		{"OPENAI_PROD_KEY", "openai", true},
+		{"openai-credentials", "openai", true},
+		{"prod/anthropic/key", "anthropic", true},
+		{"AZURE_OPENAI_ENDPOINT_KEY", "azure-openai", true},
+		{"GEMINI_KEY", "google-ai-studio", true},
+		{"VERTEX_SA", "gcp", true},
+		{"HF_ACCESS", "huggingface", true},
+		{"llm-keys", "", false},
+		{"MYOPENAIX", "", false},
+		{"", "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := catalogue.ProviderForName(tt.name)
+			if got != tt.wantProvider || ok != tt.wantOK {
+				t.Errorf("got %q, %v, want %q, %v", got, ok, tt.wantProvider, tt.wantOK)
+			}
+		})
+	}
+}
+
 func TestUnverifiedExcludesVerifiedFormats(t *testing.T) {
 	catalogue := loadCatalogue(t)
 	for _, entry := range catalogue.Unverified() {

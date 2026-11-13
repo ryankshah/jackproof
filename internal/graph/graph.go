@@ -60,7 +60,21 @@ type Holder struct {
 	Untrusted       bool       `json:"untrusted,omitempty"`
 	UntrustedReason string     `json:"untrusted_reason,omitempty"`
 	UntrustedProven bool       `json:"untrusted_proven,omitempty"`
-	TelemetrySink   string     `json:"telemetry_sink,omitempty"`
+	Sinks           []Sink     `json:"sinks,omitempty"`
+	Providers       []string   `json:"providers,omitempty"`
+}
+
+type SinkKind string
+
+const (
+	SinkTelemetry SinkKind = "telemetry"
+	SinkEnvDump   SinkKind = "environment-dump"
+)
+
+type Sink struct {
+	Kind     SinkKind `json:"kind"`
+	Detail   string   `json:"detail"`
+	Location Location `json:"location"`
 }
 
 type Edge struct {
