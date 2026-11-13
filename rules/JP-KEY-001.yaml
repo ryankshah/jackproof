@@ -1,0 +1,9 @@
+id: JP-KEY-001
+title: Literal LLM provider key found in repository
+severity: high
+verified: false
+matcher: provider-key-literal
+description: A string in a tracked file matches the key format of an LLM provider or a cloud credential that can reach model services. Anyone with read access to the repository, its forks or its history can use the key.
+remediation: Revoke the key at the provider, create a replacement, store it in a secret manager and inject it at runtime. Removing the line from the file does not remove it from git history.
+refs:
+  - https://docs.github.com/en/code-security/secret-scanning/introduction/about-secret-scanning
