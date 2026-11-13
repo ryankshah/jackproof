@@ -23,7 +23,7 @@ The maintainer will acknowledge the report, work with you on a fix, and agree a 
 ## Design commitments
 
 - A secret is shown only in redacted form and as a fingerprint.
-- All analysis is offline by default. The only network calls are the opt-in checks of `exposure verify`, and they need `--verify-live` and `--i-own-these-keys`.
+- All analysis is offline by default. The only network calls are the opt-in checks of `exposure verify`, which needs `--verify-live` and `--i-own-these-keys`, and `posture --live`, which sends one signed, read-only request to the Bedrock API with the AWS credentials in the environment.
 - Raw keys passed to `exposure --keys-stdin` are hashed in memory and never stored or echoed.
 - Test fixtures never hold strings that match real provider key formats. They are assembled at run time from fragments.
 

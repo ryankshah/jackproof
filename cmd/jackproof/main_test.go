@@ -493,3 +493,30 @@ func TestHTMLFormatFromTheCommandLine(t *testing.T) {
 		})
 	}
 }
+
+func TestPostureLiveModeNeedsCredentialsAndRegion(t *testing.T) {
+	dir := writeTree(t, map[string]string{"main.tf": "variable \"x\" {}\n"})
+	t.Setenv("AWS_ACCESS_KEY_ID", "")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "")
+	code, _, stderr := runCLI(t, "posture", "--live", dir)
+	if code != exitUsage || !strings.Contains(stderr, "AWS_ACCESS_KEY_ID") {
+		t.Errorf("no credentials: code = %d, stderr = %q", code, stderr)
+	}
+
+	t.Setenv("AWS_ACCESS_KEY_ID", "AKIDEXAMPLE")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "example-secret")
+	t.Setenv("AWS_REGION", "")
+	t.Setenv("AWS_DEFAULT_REGION", "")
+	code, _, stderr = runCLI(t, "posture", "--live", dir)
+	if code != exitUsage || !strings.Contains(stderr, "needs a region") {
+		t.Errorf("no region: code = %d, stderr = %q", code, stderr)
+	}
+	if strings.Contains(stderr, "example-secret") {
+		t.Error("the error output contains the secret key")
+	}
+
+	code, stdout, _ := runCLI(t, "posture", "-h")
+	if code != exitOK || !strings.Contains(stdout, "-live") || !strings.Contains(stdout, "-region") {
+		t.Errorf("help: code = %d, stdout = %s", code, stdout)
+	}
+}

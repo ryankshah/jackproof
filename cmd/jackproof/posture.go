@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -14,6 +15,8 @@ func runPosture(args []string, stdout io.Writer) error {
 	fs := flag.NewFlagSet("posture", flag.ContinueOnError)
 	var flags commonFlags
 	flags.register(fs, "text")
+	live := fs.Bool("live", false, "also check AWS Bedrock invocation logging with one signed read-only request, using the AWS credentials in the environment")
+	region := fs.String("region", "", "AWS region for --live (default: AWS_REGION or AWS_DEFAULT_REGION)")
 	paths, helped, err := parseFlags(fs, args, stdout)
 	if err != nil || helped {
 		return err
@@ -30,6 +33,15 @@ func runPosture(args []string, stdout io.Writer) error {
 	findings, coverage, err := posturePass(kit, result)
 	if err != nil {
 		return err
+	}
+	if *live {
+		liveFindings, source, err := livePass(kit, *region)
+		if err != nil {
+			return err
+		}
+		findings = append(findings, liveFindings...)
+		finding.Sort(findings)
+		coverage.LogSources = append(coverage.LogSources, source)
 	}
 	return emit(stdout, flags, kit, reportFor("jackproof posture", findings, coverage))
 }
@@ -58,4 +70,19 @@ func posturePass(kit toolkit, result *scan.Result) ([]finding.Finding, finding.C
 		coverage.UnverifiedRules = append(coverage.UnverifiedRules, "knowledge:"+entry)
 	}
 	return findings, coverage, nil
+}
+
+func livePass(kit toolkit, region string) ([]finding.Finding, string, error) {
+	credentials, err := posture.CredentialsFromEnvironment()
+	if err != nil {
+		return nil, "", fmt.Errorf("%w: %w", errUsage, err)
+	}
+	if region == "" {
+		region = posture.RegionFromEnvironment()
+	}
+	findings, err := posture.CheckBedrockLogging(context.Background(), posture.LiveOptions{Region: region, Credentials: credentials, Rules: kit.rules})
+	if err != nil {
+		return nil, "", fmt.Errorf("live check: %w", err)
+	}
+	return findings, fmt.Sprintf("live: AWS Bedrock invocation logging in %s. No other live checks exist", region), nil
 }

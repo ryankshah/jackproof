@@ -17,7 +17,7 @@ Flags may come before or after paths. Exit code 0 means no finding at or above `
 ## Commands
 
 - `scan [path...]`: credentials, references and the holders that can read them. `--staged` scans the staged content of the current git repository.
-- `posture [path...]`: Terraform for AWS, GCP and Azure.
+- `posture [path...]`: Terraform for AWS, GCP and Azure. `--live` also checks AWS Bedrock invocation logging with one signed, read-only `GetModelInvocationLoggingConfiguration` request. It reads `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and an optional `AWS_SESSION_TOKEN` from the environment, takes the region from `--region`, `AWS_REGION` or `AWS_DEFAULT_REGION`, and checks that one region. It does not read AWS profile files or run any other live check.
 - `hunt --source <type> <files...>`: `cloudtrail`, `gcp`, `azure` or `usage`. Optional `--graph scan.json`, `--asn-map file.csv` and `--usage-columns`.
 - `hunt export-sigma`: Sigma rules for the detections.
 - `exposure [path...]`: needs at least one of `--fingerprints file`, `--secret-names file` or `--keys-stdin`. `--fp-algo` names the algorithm of the fingerprints: `sha256` (default), `sha1` or `sha512`. A SHA-256 fingerprint may be the full digest or its first 16 characters.
