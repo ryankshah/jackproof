@@ -25,6 +25,7 @@ type Report struct {
 	Graph     *graph.Graph
 	Rules     *rules.Catalogue
 	Providers map[string]string
+	Extras    []Extra
 }
 
 type printer struct {
@@ -154,4 +155,11 @@ func Write(w io.Writer, format string, r Report) error {
 		return WriteMarkdown(w, r)
 	}
 	return fmt.Errorf("unknown format %q: want %s", format, strings.Join(formats, ", "))
+}
+
+type Extra struct {
+	Key   string
+	Title string
+	Text  string
+	Data  any
 }

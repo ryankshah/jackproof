@@ -392,3 +392,29 @@ func TestWriteDispatch(t *testing.T) {
 		t.Errorf("Formats = %v", Formats())
 	}
 }
+
+func TestExtrasAreRendered(t *testing.T) {
+	report := sampleReport()
+	report.Extras = []Extra{{Key: "rotation_plan", Title: "Rotation plan", Text: "1. Create a replacement.", Data: map[string]string{"statement": "Deleting a stored secret does not revoke it."}}}
+	tests := []struct {
+		format string
+		want   []string
+	}{
+		{"text", []string{"Rotation plan\n1. Create a replacement."}},
+		{"md", []string{"## Rotation plan", "1. Create a replacement."}},
+		{"json", []string{`"extras"`, `"rotation_plan"`, "does not revoke it"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.format, func(t *testing.T) {
+			var out bytes.Buffer
+			if err := Write(&out, tt.format, report); err != nil {
+				t.Fatal(err)
+			}
+			for _, want := range tt.want {
+				if !strings.Contains(out.String(), want) {
+					t.Errorf("output lacks %q", want)
+				}
+			}
+		})
+	}
+}

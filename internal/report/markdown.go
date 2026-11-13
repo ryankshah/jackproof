@@ -23,6 +23,9 @@ func WriteMarkdown(w io.Writer, r Report) error {
 		}
 	}
 	writeMarkdownGraph(p, r)
+	for _, extra := range r.Extras {
+		p.printf("\n## %s\n\n%s\n", extra.Title, extra.Text)
+	}
 	writeMarkdownCoverage(p, r.Coverage)
 	return p.err
 }

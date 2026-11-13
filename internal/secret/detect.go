@@ -16,6 +16,7 @@ type Match struct {
 	End         int
 	Redacted    string
 	Fingerprint string
+	Digests     map[string]string
 	Confidence  finding.Confidence
 	Verified    bool
 }
@@ -40,6 +41,7 @@ func (c *Catalogue) Detect(line string) []Match {
 				End:         end,
 				Redacted:    Redact(value),
 				Fingerprint: Fingerprint(value),
+				Digests:     Digests(value),
 				Confidence:  confidence,
 				Verified:    compiled.format.Verified,
 			})

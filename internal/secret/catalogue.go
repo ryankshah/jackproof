@@ -22,13 +22,14 @@ type Format struct {
 }
 
 type Provider struct {
-	ID      string   `yaml:"id"`
-	Name    string   `yaml:"name"`
-	EnvVars []string `yaml:"env_vars"`
-	Refs    []string `yaml:"refs"`
-	Aliases []string `yaml:"aliases"`
-	Reach   string   `yaml:"reach"`
-	Formats []Format `yaml:"formats"`
+	ID      string      `yaml:"id"`
+	Name    string      `yaml:"name"`
+	EnvVars []string    `yaml:"env_vars"`
+	Refs    []string    `yaml:"refs"`
+	Aliases []string    `yaml:"aliases"`
+	Reach   string      `yaml:"reach"`
+	Verify  *VerifySpec `yaml:"verify"`
+	Formats []Format    `yaml:"formats"`
 }
 
 type compiledFormat struct {
@@ -74,6 +75,11 @@ func parseCatalogue(data []byte) (*Catalogue, error) {
 			return nil, fmt.Errorf("duplicate provider id %q", provider.ID)
 		}
 		seen[provider.ID] = true
+		if provider.Verify != nil {
+			if err := provider.Verify.validate(); err != nil {
+				return nil, fmt.Errorf("provider %q: %w", provider.ID, err)
+			}
+		}
 		if len(provider.Formats) == 0 {
 			return nil, fmt.Errorf("provider %q has no formats", provider.ID)
 		}
@@ -180,4 +186,22 @@ func (c *Catalogue) Unverified() []UnverifiedFormat {
 		}
 	}
 	return out
+}
+
+type VerifySpec struct {
+	URL      string            `yaml:"url"`
+	Auth     string            `yaml:"auth"`
+	Headers  map[string]string `yaml:"headers"`
+	Rejected []int             `yaml:"rejected"`
+	Verified bool              `yaml:"verified"`
+}
+
+func (v *VerifySpec) validate() error {
+	if !strings.HasPrefix(v.URL, "https://") {
+		return fmt.Errorf("verify url %q must use https", v.URL)
+	}
+	if v.Auth != "bearer" && !strings.HasPrefix(v.Auth, "header:") && !strings.HasPrefix(v.Auth, "query:") {
+		return fmt.Errorf("verify auth %q must be bearer, header:NAME or query:NAME", v.Auth)
+	}
+	return nil
 }

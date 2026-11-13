@@ -35,6 +35,7 @@ type Result struct {
 	Findings []finding.Finding
 	Graph    *graph.Graph
 	Coverage finding.Coverage
+	Files    []File
 }
 
 type Scanner struct {
@@ -116,7 +117,7 @@ func (s *Scanner) Run(roots []string) (*Result, error) {
 		}
 	}
 	finding.Sort(findings)
-	return &Result{Findings: findings, Graph: r.graph, Coverage: r.coverage}, nil
+	return &Result{Findings: findings, Graph: r.graph, Coverage: r.coverage, Files: exportFiles(files)}, nil
 }
 
 func (s *Scanner) unverifiedEntries() []string {
@@ -213,4 +214,18 @@ func (r *run) reachOf(id string) string {
 		return provider.Reach
 	}
 	return ""
+}
+
+type File struct {
+	Path string
+	Kind string
+	Data []byte
+}
+
+func exportFiles(files []*sourceFile) []File {
+	exported := make([]File, len(files))
+	for i, file := range files {
+		exported[i] = File{Path: file.path, Kind: file.kind, Data: file.data}
+	}
+	return exported
 }

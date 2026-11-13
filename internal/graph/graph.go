@@ -42,14 +42,15 @@ type Location struct {
 }
 
 type Credential struct {
-	Key         string         `json:"key"`
-	Kind        CredentialKind `json:"kind"`
-	Provider    string         `json:"provider"`
-	Reach       string         `json:"reach,omitempty"`
-	Name        string         `json:"name,omitempty"`
-	Redacted    string         `json:"redacted,omitempty"`
-	Fingerprint string         `json:"fingerprint,omitempty"`
-	Definitions []Location     `json:"definitions,omitempty"`
+	Key         string            `json:"key"`
+	Kind        CredentialKind    `json:"kind"`
+	Provider    string            `json:"provider"`
+	Reach       string            `json:"reach,omitempty"`
+	Name        string            `json:"name,omitempty"`
+	Redacted    string            `json:"redacted,omitempty"`
+	Fingerprint string            `json:"fingerprint,omitempty"`
+	Digests     map[string]string `json:"-"`
+	Definitions []Location        `json:"definitions,omitempty"`
 }
 
 type Holder struct {

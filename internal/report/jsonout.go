@@ -18,6 +18,7 @@ type jsonDocument struct {
 	Title    string            `json:"title"`
 	Findings []finding.Finding `json:"findings"`
 	Graph    *jsonGraph        `json:"graph,omitempty"`
+	Extras   map[string]any    `json:"extras,omitempty"`
 	Coverage finding.Coverage  `json:"coverage"`
 }
 
@@ -38,6 +39,12 @@ func WriteJSON(w io.Writer, r Report) error {
 	}
 	if document.Findings == nil {
 		document.Findings = []finding.Finding{}
+	}
+	if len(r.Extras) > 0 {
+		document.Extras = make(map[string]any, len(r.Extras))
+		for _, extra := range r.Extras {
+			document.Extras[extra.Key] = extra.Data
+		}
 	}
 	if r.Graph != nil {
 		document.Graph = &jsonGraph{

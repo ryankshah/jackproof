@@ -3,6 +3,7 @@ package scan
 import (
 	"cmp"
 	"fmt"
+	"github.com/ryankshah/jackproof/internal/secret"
 	"path"
 	"strings"
 
@@ -113,7 +114,7 @@ func (r *run) bind(holderID, filePath string, variable iac.EnvVar, directory str
 	case iac.ValueLiteral:
 		if matches := secrets.Detect(variable.Name + "=" + variable.Value); len(matches) > 0 {
 			for _, match := range matches {
-				r.bindLiteral(edge, match.Provider, match.Redacted, match.Fingerprint, false)
+				r.bindLiteral(edge, match, false)
 			}
 			return
 		}
@@ -126,7 +127,7 @@ func (r *run) bind(holderID, filePath string, variable iac.EnvVar, directory str
 			if entry, example, found := r.interpolationEntry(directory, name); found {
 				if matches := secrets.Detect(name + "=" + entry.Value); len(matches) > 0 {
 					for _, match := range matches {
-						r.bindLiteral(edge, match.Provider, match.Redacted, match.Fingerprint, example)
+						r.bindLiteral(edge, match, example)
 					}
 					return
 				}
@@ -177,9 +178,9 @@ func (r *run) providerForSecret(variable iac.EnvVar) (string, bool) {
 	return "", false
 }
 
-func (r *run) bindLiteral(edge graph.Edge, provider, redacted, fingerprint string, inferred bool) {
-	key := literalKey(fingerprint)
-	r.graph.AddCredential(graph.Credential{Key: key, Kind: graph.KindLiteral, Provider: provider, Reach: r.reachOf(provider), Redacted: redacted, Fingerprint: fingerprint})
+func (r *run) bindLiteral(edge graph.Edge, match secret.Match, inferred bool) {
+	key := literalKey(match.Fingerprint)
+	r.graph.AddCredential(graph.Credential{Key: key, Kind: graph.KindLiteral, Provider: match.Provider, Reach: r.reachOf(match.Provider), Redacted: match.Redacted, Fingerprint: match.Fingerprint, Digests: match.Digests})
 	edge.Credential = key
 	edge.Inferred = inferred
 	r.graph.AddEdge(edge)

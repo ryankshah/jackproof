@@ -31,6 +31,9 @@ func WriteText(w io.Writer, r Report) error {
 		p.printf("         id: %s\n", f.ID)
 	}
 	writeTextGraph(p, r)
+	for _, extra := range r.Extras {
+		p.printf("\n%s\n%s\n", extra.Title, extra.Text)
+	}
 	writeTextCoverage(p, r.Coverage)
 	return p.err
 }

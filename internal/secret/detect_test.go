@@ -296,3 +296,63 @@ func TestUnverifiedExcludesVerifiedFormats(t *testing.T) {
 		t.Error("expected unverified formats")
 	}
 }
+
+func TestVerifySpecValidation(t *testing.T) {
+	tests := []struct {
+		name string
+		spec string
+		want bool
+	}{
+		{"bearer", "{url: 'https://example.com/models', auth: bearer}", true},
+		{"header", "{url: 'https://example.com/models', auth: 'header:x-api-key'}", true},
+		{"query", "{url: 'https://example.com/models', auth: 'query:key'}", true},
+		{"plain http", "{url: 'http://example.com/models', auth: bearer}", false},
+		{"unknown auth", "{url: 'https://example.com/models', auth: basic}", false},
+		{"empty auth", "{url: 'https://example.com/models'}", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			yamlText := "- {id: a, name: A, reach: r, env_vars: [A_KEY], verify: " + tt.spec + ", formats: [{name: k, pattern: 'a+'}]}\n"
+			_, err := parseCatalogue([]byte(yamlText))
+			if (err == nil) != tt.want {
+				t.Errorf("error = %v, want valid = %v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestDigestsAndNormalizeDigest(t *testing.T) {
+	digests := Digests("abc")
+	if digests[AlgoSHA1] != "a9993e364706816aba3e25717850c26c9cd0d89d" {
+		t.Errorf("sha1 = %s", digests[AlgoSHA1])
+	}
+	if digests[AlgoSHA256] != "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" {
+		t.Errorf("sha256 = %s", digests[AlgoSHA256])
+	}
+	if !strings.HasPrefix(digests[AlgoSHA512], "ddaf35a193617aba") {
+		t.Errorf("sha512 = %s", digests[AlgoSHA512])
+	}
+	tests := []struct {
+		algo    string
+		input   string
+		want    string
+		wantErr bool
+	}{
+		{AlgoSHA256, digests[AlgoSHA256], "ba7816bf8f01cfea", false},
+		{AlgoSHA1, strings.ToUpper(digests[AlgoSHA1]), digests[AlgoSHA1], false},
+		{AlgoSHA1, "abcd", "", true},
+		{AlgoSHA1, "zzzzzzzzzzzzzzzzzzzz", "", true},
+		{"md5", "0123456789abcdef", "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.algo+" "+tt.input, func(t *testing.T) {
+			got, err := NormalizeDigest(tt.algo, tt.input)
+			if (err != nil) != tt.wantErr || got != tt.want {
+				t.Errorf("got %q, %v", got, err)
+			}
+		})
+	}
+	if len(Algorithms()) != 3 {
+		t.Errorf("algorithms = %v", Algorithms())
+	}
+}

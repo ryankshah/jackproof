@@ -68,7 +68,7 @@ func (r *run) processCode(file *sourceFile, hits []literalHit) {
 			Holder:   holderID,
 			Delivery: graph.DeliveryCodeRead,
 			Location: graph.Location{Path: file.path, Line: hit.line},
-		}, hit.match.Provider, hit.match.Redacted, hit.match.Fingerprint, false)
+		}, hit.match, false)
 	}
 	for _, leak := range facts.Leaks {
 		r.recordLeak(file, language, lineMap(leak.Line), leak)
