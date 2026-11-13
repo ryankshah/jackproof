@@ -113,19 +113,34 @@ func holderLabel(h graph.Holder) string {
 	return label
 }
 
-func splitUnverified(entries []string) (ruleIDs []string, formats, clients int) {
+func splitUnverified(entries []string) (ruleIDs []string, detail string) {
+	var formats, clients, knowledge int
 	for _, entry := range entries {
 		switch {
 		case strings.HasPrefix(entry, "format:"):
 			formats++
 		case strings.HasPrefix(entry, "client:"):
 			clients++
+		case strings.HasPrefix(entry, "knowledge:"):
+			knowledge++
 		default:
 			ruleIDs = append(ruleIDs, entry)
 		}
 	}
 	sort.Strings(ruleIDs)
-	return ruleIDs, formats, clients
+	var parts []string
+	for _, counted := range []struct {
+		count int
+		noun  string
+	}{{formats, "provider key formats"}, {clients, "SDK client patterns"}, {knowledge, "cloud permission entries"}} {
+		if counted.count > 0 {
+			parts = append(parts, fmt.Sprintf("%d %s", counted.count, counted.noun))
+		}
+	}
+	if len(parts) > 0 {
+		detail = "not verified against provider documentation: " + strings.Join(parts, ", ")
+	}
+	return ruleIDs, detail
 }
 
 func kindSummary(c finding.Coverage) string {
@@ -162,4 +177,11 @@ type Extra struct {
 	Title string
 	Text  string
 	Data  any
+}
+
+func capitalizeFirst(text string) string {
+	if text == "" {
+		return text
+	}
+	return strings.ToUpper(text[:1]) + text[1:]
 }

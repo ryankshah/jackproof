@@ -125,7 +125,7 @@ func TestTextContent(t *testing.T) {
 		"environments: prod",
 		"if a holder is compromised: Model inference billed to the owner.",
 		"files scanned: 3 (go 2, yaml 1)",
-		"provider key formats not verified: 2, SDK client patterns not verified: 1",
+		"not verified against provider documentation: 2 provider key formats, 1 SDK client patterns",
 		"time range for events.json: 2026-01-01T00:00:00Z to 2026-01-02T00:00:00Z",
 	} {
 		if !strings.Contains(text, want) {

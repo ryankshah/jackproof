@@ -24,6 +24,7 @@ const usageText = `usage: jackproof <command> [flags] [arguments]
 
 commands:
   scan [path...]       find LLM credentials and the workloads that can read them
+  posture [path...]    evaluate whether model services can be enabled and abused
   report [path...]     build one report across modules
   exposure [path...]   locate exposed credentials and plan their rotation
   exposure verify      check that old credentials no longer authenticate
@@ -62,6 +63,8 @@ func dispatch(args []string, stdin io.Reader, stdout io.Writer) error {
 		return runScan(rest, stdout)
 	case "report":
 		return runReport(rest, stdout)
+	case "posture":
+		return runPosture(rest, stdout)
 	case "exposure":
 		return runExposure(rest, stdin, stdout)
 	case "rules":

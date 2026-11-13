@@ -308,3 +308,61 @@ func TestExposureVerifyWithoutNetwork(t *testing.T) {
 		t.Errorf("empty input: code = %d, stderr = %s", code, stderr)
 	}
 }
+
+const postureFixture = "resource \"aws_iam_role\" \"deployer\" {\n  name = \"deployer\"\n}\n\nresource \"aws_iam_role_policy\" \"deployer\" {\n  role   = aws_iam_role.deployer.id\n  policy = jsonencode({\n    Statement = [{ Effect = \"Allow\", Action = [\"bedrock:*\"], Resource = \"*\" }]\n  })\n}\n"
+
+func TestPostureCommand(t *testing.T) {
+	root := writeTree(t, map[string]string{
+		"prod/iam.tf":    postureFixture,
+		"jackproof.yaml": "environments:\n  prod: [\"prod/**\"]\nexpected_providers:\n  prod: []\n",
+	})
+	code, stdout, stderr := runCLI(t, "posture", root)
+	if code != exitFindings {
+		t.Fatalf("exit code = %d (stderr: %s)", code, stderr)
+	}
+	for _, want := range []string{"JP-POS-001", "JP-POS-006", "jackproof posture:", "deployer can enable Amazon Bedrock", "files scanned: 1 (terraform 1)", "cloud permission entries"} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("stdout lacks %q:\n%s", want, stdout)
+		}
+	}
+	code, stdout, _ = runCLI(t, "posture", "--format", "sarif", "--fail-on", "critical", root)
+	if code != exitOK || !strings.Contains(stdout, `"ruleId": "JP-POS-001"`) {
+		t.Errorf("sarif: code = %d, stdout = %.200s", code, stdout)
+	}
+	empty := t.TempDir()
+	code, stdout, _ = runCLI(t, "posture", empty)
+	if code != exitOK || !strings.Contains(stdout, "No findings") {
+		t.Errorf("empty: code = %d, stdout = %s", code, stdout)
+	}
+}
+
+func TestReportCombinesScanAndPosture(t *testing.T) {
+	root := writeTree(t, map[string]string{
+		"prod/iam.tf":    postureFixture,
+		".env":           "ANTHROPIC_API_KEY=" + testKey + "\n",
+		"jackproof.yaml": "environments:\n  prod: [\"prod/**\"]\nexpected_providers:\n  prod: []\n",
+	})
+	code, stdout, stderr := runCLI(t, "report", "--format", "json", "--fail-on", "critical", root)
+	if code != exitOK {
+		t.Fatalf("exit code = %d (stderr: %s)", code, stderr)
+	}
+	var decoded struct {
+		Findings []struct{ Rule string }
+		Coverage struct {
+			FilesScanned map[string]int `json:"files_scanned"`
+		}
+	}
+	if err := json.Unmarshal([]byte(stdout), &decoded); err != nil {
+		t.Fatal(err)
+	}
+	rules := make(map[string]bool)
+	for _, f := range decoded.Findings {
+		rules[f.Rule] = true
+	}
+	if !rules["JP-KEY-001"] || !rules["JP-POS-001"] {
+		t.Errorf("rules = %v", rules)
+	}
+	if decoded.Coverage.FilesScanned["terraform"] != 1 {
+		t.Errorf("terraform files must be counted once: %+v", decoded.Coverage.FilesScanned)
+	}
+}

@@ -12,7 +12,6 @@ import (
 	"github.com/ryankshah/jackproof/internal/finding"
 	"github.com/ryankshah/jackproof/internal/report"
 	"github.com/ryankshah/jackproof/internal/rules"
-	"github.com/ryankshah/jackproof/internal/scan"
 	"github.com/ryankshah/jackproof/internal/secret"
 )
 
@@ -132,10 +131,6 @@ func defaultPaths(paths []string) []string {
 		return []string{"."}
 	}
 	return paths
-}
-
-func scanReport(title string, result *scan.Result) report.Report {
-	return report.Report{Title: title, Findings: result.Findings, Coverage: result.Coverage, Graph: result.Graph}
 }
 
 func emit(stdout io.Writer, flags commonFlags, kit toolkit, rep report.Report) error {

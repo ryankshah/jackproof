@@ -81,12 +81,12 @@ func writeTextCoverage(p *printer, c finding.Coverage) {
 	for _, span := range c.TimeRanges {
 		p.printf("  time range for %s: %s to %s\n", span.Source, span.From.UTC().Format("2006-01-02T15:04:05Z"), span.To.UTC().Format("2006-01-02T15:04:05Z"))
 	}
-	ruleIDs, formats, clients := splitUnverified(c.UnverifiedRules)
+	ruleIDs, detail := splitUnverified(c.UnverifiedRules)
 	if len(ruleIDs) > 0 {
 		p.printf("  rules not verified against provider documentation: %s\n", strings.Join(ruleIDs, ", "))
 	}
-	if formats > 0 || clients > 0 {
-		p.printf("  provider key formats not verified: %d, SDK client patterns not verified: %d\n", formats, clients)
+	if detail != "" {
+		p.printf("  %s\n", detail)
 	}
 }
 
