@@ -107,6 +107,7 @@ func (s *Scanner) Run(roots []string) (*Result, error) {
 		r.coverage.AddScanned(file.kind)
 		r.processStructure(file, hits[file.path])
 	}
+	r.processTerraform(files)
 	r.evaluateRisks()
 
 	r.coverage.UnverifiedRules = s.unverifiedEntries()

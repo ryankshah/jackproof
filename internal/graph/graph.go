@@ -22,6 +22,7 @@ const (
 	HolderDevcontainer   HolderKind = "devcontainer"
 	HolderNotebook       HolderKind = "notebook"
 	HolderCode           HolderKind = "code"
+	HolderTerraform      HolderKind = "terraform-resource"
 )
 
 type Delivery string

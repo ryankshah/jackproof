@@ -535,3 +535,47 @@ func TestUnparseableStructureIsReported(t *testing.T) {
 		t.Errorf("skips = %+v", result.Coverage.FilesSkipped)
 	}
 }
+
+func TestTerraformWorkloads(t *testing.T) {
+	ecs := "variable \"openai_key\" {}\n\nresource \"aws_ecs_task_definition\" \"chat\" {\n  family = \"chat\"\n  container_definitions = jsonencode([{\n    name  = \"api\"\n    image = \"chat-api:1\"\n    environment = [\n      { name = \"OPENAI_API_KEY\", value = var.openai_key },\n      { name = \"SENTRY_DSN\", value = \"https://example.invalid/1\" },\n    ]\n    secrets = [\n      { name = \"ANTHROPIC_API_KEY\", valueFrom = \"arn:aws:secretsmanager:us-east-1:111122223333:secret:prod/anthropic\" },\n    ]\n  }])\n}\n\nresource \"aws_lambda_function\" \"eval_runner\" {\n  function_name = \"eval-runner\"\n  environment {\n    variables = {\n      GROQ_API_KEY = \"" + "gsk" + "_" + strings.Repeat("e", 50) + "\"\n    }\n  }\n}\n\nresource \"google_cloud_run_v2_service\" \"api\" {\n  name = \"api\"\n  template {\n    containers {\n      image = \"api:1\"\n      env {\n        name = \"MISTRAL_API_KEY\"\n        value_source {\n          secret_key_ref {\n            secret  = \"mistral-key\"\n            version = \"latest\"\n          }\n        }\n      }\n    }\n  }\n}\n"
+	result := runScan(t, "environments:\n  prod: [\"infra/**\"]\n", map[string]string{"infra/main.tf": ecs})
+
+	holders := make(map[string]graph.Holder)
+	for _, holder := range result.Graph.Holders() {
+		holders[holder.Name] = holder
+	}
+	for _, name := range []string{"aws_ecs_task_definition.chat", "aws_lambda_function.eval_runner", "google_cloud_run_v2_service.api"} {
+		holder, ok := holders[name]
+		if !ok || holder.Kind != graph.HolderTerraform || holder.Environment != "prod" {
+			t.Errorf("holder %s = %+v, ok %v", name, holder, ok)
+		}
+	}
+	if !holders["aws_lambda_function.eval_runner"].Untrusted {
+		t.Error("eval-runner should be untrusted by name")
+	}
+	if len(holders["aws_ecs_task_definition.chat"].Sinks) != 1 {
+		t.Errorf("ecs sinks = %+v", holders["aws_ecs_task_definition.chat"].Sinks)
+	}
+
+	keys := make(map[string]bool)
+	for _, edge := range result.Graph.Edges() {
+		keys[edge.Credential] = true
+	}
+	for _, want := range []string{"reference:env:OPENAI_API_KEY", "reference:aws-secret:arn:aws:secretsmanager:us-east-1:111122223333:secret:prod/anthropic", "reference:gcp-secret:mistral-key"} {
+		if !keys[want] {
+			t.Errorf("missing credential %s in %v", want, keys)
+		}
+	}
+	literal := false
+	for key := range keys {
+		if strings.HasPrefix(key, "literal:") {
+			literal = true
+		}
+	}
+	if !literal {
+		t.Error("the literal Groq key in the Lambda environment was not linked to its holder")
+	}
+	if len(findingsFor(result, "JP-KEY-020")) == 0 || len(findingsFor(result, "JP-KEY-021")) == 0 {
+		t.Errorf("expected untrusted and shared sink findings, got %d findings", len(result.Findings))
+	}
+}

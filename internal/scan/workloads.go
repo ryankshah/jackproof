@@ -10,6 +10,7 @@ import (
 	"github.com/ryankshah/jackproof/internal/finding"
 	"github.com/ryankshah/jackproof/internal/graph"
 	"github.com/ryankshah/jackproof/internal/scan/iac"
+	"github.com/ryankshah/jackproof/internal/scan/iac/terraform"
 	"github.com/ryankshah/jackproof/internal/scan/lang"
 )
 
@@ -299,4 +300,32 @@ func (r *run) dotenvPresentAndNotIgnored(directory string) bool {
 func isDotenvName(name string) bool {
 	lower := strings.ToLower(name)
 	return lower == ".env" || strings.HasPrefix(lower, ".env.") || strings.HasSuffix(lower, ".env")
+}
+
+func (r *run) processTerraform(files []*sourceFile) {
+	byDirectory := make(map[string][]*sourceFile)
+	var directories []string
+	for _, file := range files {
+		if file.kind != kindTerraform {
+			continue
+		}
+		directory := directoryOf(file.path)
+		if _, seen := byDirectory[directory]; !seen {
+			directories = append(directories, directory)
+		}
+		byDirectory[directory] = append(byDirectory[directory], file)
+	}
+	for _, directory := range directories {
+		module := terraform.NewModule(directory)
+		for _, file := range byDirectory[directory] {
+			if err := module.AddFile(file.path, file.data); err != nil {
+				r.coverage.AddSkipped(file.path, fmt.Sprintf("structure not analysed: %v", err))
+			}
+		}
+		for _, workload := range iac.TerraformWorkloads(module) {
+			if file, ok := r.byPath[workload.Path]; ok {
+				r.addWorkload(file, workload)
+			}
+		}
+	}
 }
