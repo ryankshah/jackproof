@@ -1,0 +1,9 @@
+id: JP-KEY-010
+title: Same credential used across environments
+severity: high
+verified: true
+matcher: cross-environment-credential
+description: One key or secret reference is delivered to workloads in more than one environment. A compromise of the least protected environment exposes every other environment that shares the credential, and one stolen key carries the spend of all of them.
+remediation: Issue a separate credential for each environment. Set a spend limit on each at the provider. Rotate the shared credential after the split.
+refs:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html

@@ -1,0 +1,11 @@
+id: JP-KEY-030
+title: Long-lived cloud key used where short-lived or federated credentials are available
+severity: high
+verified: true
+matcher: static-cloud-key
+description: A static access key or service account key is delivered to a workload on a platform that can issue short-lived credentials, such as GitHub Actions OIDC, IAM roles for service accounts, or workload identity federation. A static key stays valid until someone revokes it, so a stolen copy keeps working.
+remediation: Replace the static key with a role or federated identity bound to the workload. Delete the static key after the workload is switched over.
+refs:
+  - https://docs.github.com/en/actions/security-for-github-actions/security-hardening-your-deployments/about-security-hardening-with-openid-connect
+  - https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html
+  - https://cloud.google.com/iam/docs/workload-identity-federation

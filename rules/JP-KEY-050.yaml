@@ -1,0 +1,9 @@
+id: JP-KEY-050
+title: Credential stored in a container image layer
+severity: high
+verified: true
+matcher: credential-in-image
+description: A Dockerfile sets a credential with ENV or ARG, or copies a dotenv file into the image. Anyone who can pull the image can read the value from its layers or its build history.
+remediation: Remove the credential from the Dockerfile. Pass it at run time, or use a build secret mount for build-time needs. Rebuild the image and revoke the exposed credential.
+refs:
+  - https://docs.docker.com/build/building/secrets/

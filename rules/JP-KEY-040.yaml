@@ -1,0 +1,10 @@
+id: JP-KEY-040
+title: Credential reaches a logger, error message or HTTP response
+severity: high
+verified: true
+matcher: credential-to-sink
+description: Code reads a credential and passes it to a logging call, an error constructor, a panic or a response writer. Logs and error reports are widely readable and are often forwarded to third parties.
+remediation: Remove the value from the call. If the call needs to identify the key, log the fingerprint or the last four characters instead.
+refs:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+  - https://cwe.mitre.org/data/definitions/532.html

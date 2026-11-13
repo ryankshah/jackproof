@@ -1,0 +1,10 @@
+id: JP-KEY-020
+title: Credential exposed to a workload that runs untrusted code
+severity: high
+verified: true
+matcher: credential-in-untrusted-workload
+description: A credential is available to a workload that runs untrusted or user-supplied code, such as an evaluation runner, notebook kernel, sandbox, plugin host, or a CI job triggered by pull_request_target. Code in that workload can read the credential and send it elsewhere.
+remediation: Remove the credential from the workload. Route model calls through a proxy that holds the key and enforces per-caller limits. For pull_request_target jobs, do not check out or run pull request code in a job that has secrets.
+refs:
+  - https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions
+  - https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
