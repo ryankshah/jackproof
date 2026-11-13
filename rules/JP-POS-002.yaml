@@ -1,0 +1,11 @@
+id: JP-POS-002
+title: No organization guardrail denies model enablement in non-AI accounts
+severity: medium
+verified: false
+matcher: missing-guardrail
+description: The scanned infrastructure code defines cloud resources but no service control policy, organization policy or Azure Policy that denies model services. Without a guardrail, any identity with enough permissions in a non-AI account can enable and use models there.
+remediation: Add an organization-level guardrail that denies the model services in accounts that do not need them. Guardrails often live outside the repository that holds workload code, so confirm where they are defined before treating this as a gap.
+refs:
+  - https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html
+  - https://cloud.google.com/resource-manager/docs/organization-policy/overview
+  - https://learn.microsoft.com/en-us/azure/governance/policy/overview

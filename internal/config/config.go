@@ -23,8 +23,10 @@ type Ignore struct {
 }
 
 type Config struct {
-	Ignore       Ignore              `yaml:"ignore"`
-	Environments map[string][]string `yaml:"environments"`
+	Ignore            Ignore              `yaml:"ignore"`
+	Environments      map[string][]string `yaml:"environments"`
+	ExpectedProviders map[string][]string `yaml:"expected_providers"`
+	OwnedAccounts     []string            `yaml:"owned_accounts"`
 
 	ignoreMatchers []*regexp.Regexp
 	envMatchers    []environmentMatcher
@@ -148,4 +150,18 @@ func compileGlob(glob string) (*regexp.Regexp, error) {
 	}
 	builder.WriteString("$")
 	return regexp.Compile(builder.String())
+}
+
+func (c *Config) ExpectedProvidersFor(environment string) ([]string, bool) {
+	providers, configured := c.ExpectedProviders[environment]
+	return providers, configured
+}
+
+func (c *Config) OwnsAccount(id string) bool {
+	for _, owned := range c.OwnedAccounts {
+		if owned == id {
+			return true
+		}
+	}
+	return false
 }

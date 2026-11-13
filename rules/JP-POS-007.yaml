@@ -1,0 +1,10 @@
+id: JP-POS-007
+title: Identity can create long-lived keys for a model-capable principal
+severity: high
+verified: false
+matcher: credential-creation
+description: An identity can create access keys or service account keys for a principal that can invoke models. A key created this way works from anywhere and stays valid until someone deletes it, so one compromised identity becomes durable model access.
+remediation: Remove the key creation permission from this identity, or restrict it to principals that cannot invoke models. Prefer roles and workload identity over long-lived keys for model-capable principals.
+refs:
+  - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
+  - https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys

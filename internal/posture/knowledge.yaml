@@ -1,0 +1,143 @@
+capabilities:
+  - name: enable-model-access
+    cloud: aws
+    service: bedrock
+    actions:
+      - aws-marketplace:Subscribe
+      - bedrock:PutFoundationModelEntitlement
+      - bedrock:CreateFoundationModelAgreement
+    verified: false
+  - name: enable-model-access
+    cloud: gcp
+    service: vertex-ai
+    actions:
+      - serviceusage.services.enable
+    verified: false
+  - name: enable-model-access
+    cloud: gcp
+    service: gemini-api
+    actions:
+      - serviceusage.services.enable
+    verified: false
+  - name: enable-model-access
+    cloud: azure
+    service: azure-openai
+    actions:
+      - Microsoft.CognitiveServices/accounts/write
+      - Microsoft.CognitiveServices/accounts/deployments/write
+    verified: false
+  - name: invoke-model
+    cloud: aws
+    service: bedrock
+    actions:
+      - bedrock:InvokeModel
+      - bedrock:InvokeModelWithResponseStream
+      - bedrock:Converse
+      - bedrock:ConverseStream
+    verified: false
+  - name: invoke-model
+    cloud: gcp
+    service: vertex-ai
+    actions:
+      - aiplatform.endpoints.predict
+    verified: false
+  - name: invoke-model
+    cloud: azure
+    service: azure-openai
+    actions:
+      - Microsoft.CognitiveServices/accounts/OpenAI/deployments/chat/completions/action
+    verified: false
+  - name: disable-invocation-logging
+    cloud: aws
+    service: bedrock
+    actions:
+      - bedrock:DeleteModelInvocationLoggingConfiguration
+      - bedrock:PutModelInvocationLoggingConfiguration
+    verified: false
+  - name: create-credential
+    cloud: aws
+    service: iam
+    actions:
+      - iam:CreateAccessKey
+    verified: false
+  - name: create-credential
+    cloud: gcp
+    service: iam
+    actions:
+      - iam.serviceAccountKeys.create
+    verified: false
+
+managed_policies:
+  - arn: arn:aws:iam::aws:policy/AdministratorAccess
+    actions: ["*"]
+    admin: true
+    verified: false
+  - arn: arn:aws:iam::aws:policy/AmazonBedrockFullAccess
+    actions: ["bedrock:*"]
+    verified: false
+  - arn: arn:aws:iam::aws:policy/IAMFullAccess
+    actions: ["iam:*"]
+    verified: false
+  - arn: arn:aws:iam::aws:policy/PowerUserAccess
+    actions: ["bedrock:*", "aws-marketplace:*"]
+    verified: false
+
+gcp_roles:
+  - name: roles/owner
+    permissions: ["*"]
+    broad: true
+    verified: false
+  - name: roles/editor
+    permissions: ["serviceusage.services.enable", "aiplatform.*"]
+    broad: true
+    verified: false
+  - name: roles/serviceusage.serviceUsageAdmin
+    permissions: ["serviceusage.services.enable"]
+    verified: false
+  - name: roles/aiplatform.admin
+    permissions: ["aiplatform.*"]
+    broad: true
+    verified: false
+  - name: roles/aiplatform.user
+    permissions: ["aiplatform.endpoints.predict"]
+    verified: false
+  - name: roles/iam.serviceAccountKeyAdmin
+    permissions: ["iam.serviceAccountKeys.create"]
+    verified: false
+
+azure_roles:
+  - name: Owner
+    actions: ["*"]
+    broad: true
+    verified: false
+  - name: Contributor
+    actions: ["Microsoft.CognitiveServices/*"]
+    broad: true
+    verified: false
+  - name: Cognitive Services Contributor
+    actions: ["Microsoft.CognitiveServices/*"]
+    verified: false
+  - name: Cognitive Services OpenAI Contributor
+    actions: ["Microsoft.CognitiveServices/accounts/OpenAI/*", "Microsoft.CognitiveServices/accounts/deployments/write"]
+    verified: false
+  - name: Cognitive Services OpenAI User
+    actions: ["Microsoft.CognitiveServices/accounts/OpenAI/*"]
+    verified: false
+
+services:
+  - id: bedrock
+    cloud: aws
+    name: Amazon Bedrock
+    budget_terms: [bedrock]
+  - id: vertex-ai
+    cloud: gcp
+    name: Vertex AI
+    budget_terms: [vertex, aiplatform]
+  - id: gemini-api
+    cloud: gcp
+    name: Gemini API
+    budget_terms: [generative, gemini]
+  - id: azure-openai
+    cloud: azure
+    name: Azure OpenAI
+    budget_terms: [cognitive, openai]

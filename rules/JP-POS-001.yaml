@@ -1,0 +1,11 @@
+id: JP-POS-001
+title: Identity can enable model access where models are not expected
+severity: high
+verified: false
+matcher: enable-model-access
+description: A policy lets an identity subscribe to or enable a model service in an account, project or subscription that jackproof.yaml does not list as an expected model environment. An attacker with that identity can switch on Bedrock, Vertex AI, the Gemini API or Azure OpenAI in an account that never used them, and run models at the owner's expense.
+remediation: Remove the enabling actions from the identity, or add the service to expected_providers for this environment in jackproof.yaml if models are intended there. Deny model enablement with an organization guardrail in accounts that do not need it.
+refs:
+  - https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html
+  - https://cloud.google.com/service-usage/docs/enable-disable
+  - https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/create-resource

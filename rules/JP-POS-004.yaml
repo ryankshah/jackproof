@@ -1,0 +1,11 @@
+id: JP-POS-004
+title: No budget or billing alert covers model spend
+severity: medium
+verified: false
+matcher: missing-budget
+description: Models are enabled or used in this cloud account, and no budget or billing alert in the scanned code covers model spend. Stolen model access has produced charges of six figures in a day, and a budget alert is often the first sign.
+remediation: Create a budget with an alert threshold that covers the model service, and send the alert to a channel that someone watches. Budgets can be defined outside this repository, so confirm before adding a duplicate.
+refs:
+  - https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html
+  - https://cloud.google.com/billing/docs/how-to/budgets
+  - https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/tutorial-acm-create-budgets

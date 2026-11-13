@@ -1,0 +1,11 @@
+id: JP-POS-003
+title: Model invocation logging is disabled or can be disabled
+severity: high
+verified: false
+matcher: invocation-logging
+description: Model invocation logging is not configured, is configured with delivery turned off, or can be switched off by an identity that is not an administrator. Without invocation records, stolen access leaves little evidence of who called which model and when.
+remediation: Turn on invocation logging with delivery to a log destination that the model-using identities cannot modify. Remove the permission to change the logging configuration from non-administrator identities.
+refs:
+  - https://docs.aws.amazon.com/bedrock/latest/userguide/model-invocation-logging.html
+  - https://cloud.google.com/logging/docs/audit/configure-data-access
+  - https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/diagnostic-settings

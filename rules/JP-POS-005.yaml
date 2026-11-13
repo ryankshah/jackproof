@@ -1,0 +1,11 @@
+id: JP-POS-005
+title: No quota or rate limit is set below the service default
+severity: low
+verified: false
+matcher: missing-quota
+description: Models are enabled or used in this cloud account, and the scanned code sets no quota or rate limit for the model service. The default limits are sized for production use, so an attacker can run at a high rate before anything throttles them.
+remediation: Lower the quota or deployment capacity to the level the workload needs. The default for the service is not known to jackproof, so the value you set must be checked against it.
+refs:
+  - https://docs.aws.amazon.com/servicequotas/latest/userguide/intro.html
+  - https://cloud.google.com/docs/quotas/overview
+  - https://learn.microsoft.com/en-us/azure/ai-services/openai/quotas-limits

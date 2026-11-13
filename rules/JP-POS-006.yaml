@@ -1,0 +1,11 @@
+id: JP-POS-006
+title: Principal with model invoke permission has wildcard resources
+severity: medium
+verified: false
+matcher: wildcard-invoke
+description: An identity can invoke models through a wildcard action or on every resource. If the identity is compromised, the attacker can call every model in the account, including the most expensive ones.
+remediation: Limit the invoke permission to the specific models and regions the workload uses. Replace wildcard actions with the individual invoke actions.
+refs:
+  - https://docs.aws.amazon.com/bedrock/latest/userguide/security_iam_id-based-policy-examples.html
+  - https://cloud.google.com/vertex-ai/docs/general/access-control
+  - https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/role-based-access-control
