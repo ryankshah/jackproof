@@ -27,7 +27,7 @@ func WriteText(w io.Writer, r Report) error {
 		for _, unproven := range f.Unproven {
 			p.printf("         not established: %s\n", unproven)
 		}
-		p.printf("         fix: %s\n", f.Remediation)
+		p.printf("         fix: %s\n", firstParagraph(f.Remediation))
 		p.printf("         id: %s\n", f.ID)
 	}
 	writeTextGraph(p, r)

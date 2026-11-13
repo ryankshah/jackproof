@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}}</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --text: #1b1f24;
+  --muted: #4b5563;
+  --surface: #f6f7f9;
+  --border: #d0d5dd;
+  --critical: #7a1020;
+  --high: #9a3412;
+  --medium: #854d0e;
+  --low: #1e4e79;
+  --info: #374151;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #e6e8eb;
+    --muted: #aab1bb;
+    --surface: #1a1d22;
+    --border: #3a4049;
+    --critical: #ff9aa8;
+    --high: #ffb27a;
+    --medium: #f0d070;
+    --low: #8cc4f5;
+    --info: #c0c6cf;
+  }
+  body { background: #101216; }
+}
+body { font: 16px/1.5 system-ui, sans-serif; color: var(--text); max-width: 60rem; margin: 2rem auto; padding: 0 1rem; }
+h1, h2, h3 { line-height: 1.25; }
+h2 { margin-top: 2.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.25rem; }
+.meta { color: var(--muted); }
+article { border: 1px solid var(--border); border-left-width: 6px; border-radius: 4px; padding: 0.75rem 1rem; margin: 1rem 0; background: var(--surface); }
+article.critical { border-left-color: var(--critical); }
+article.high { border-left-color: var(--high); }
+article.medium { border-left-color: var(--medium); }
+article.low { border-left-color: var(--low); }
+article.info { border-left-color: var(--info); }
+.severity { font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.critical .severity { color: var(--critical); }
+.high .severity { color: var(--high); }
+.medium .severity { color: var(--medium); }
+.low .severity { color: var(--low); }
+.info .severity { color: var(--info); }
+pre { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0.5rem 0.75rem; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
+dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; }
+dt { color: var(--muted); }
+dd { margin: 0; }
+a { color: inherit; }
+</style>
+</head>
+<body>
+<header>
+<h1>{{.Title}}</h1>
+<p class="meta">{{.Summary}}{{if .Version}}. jackproof {{.Version}}{{end}}</p>
+{{if .Empty}}<p>{{.EmptyNote}}</p>{{end}}
+</header>
+<main>
+{{if .Findings}}
+<h2>Findings</h2>
+{{range .Findings}}
+<article class="{{.SeverityTag}}" id="finding-{{.ID}}">
+<h3><span class="severity">{{.Severity}}</span> {{.Rule}}: {{.Title}}</h3>
+<dl>
+<dt>Confidence</dt><dd>{{.Confidence}}</dd>
+<dt>Method</dt><dd>{{.Method}}</dd>
+{{if .FlagText}}<dt>Flags</dt><dd>{{.FlagText}}</dd>{{end}}
+<dt>Finding id</dt><dd><code>{{.ID}}</code></dd>
+</dl>
+<h4>Evidence</h4>
+{{range .Locations}}<p><code>{{.Where}}</code></p>{{if .Excerpt}}<pre><code>{{.Excerpt}}</code></pre>{{end}}{{end}}
+{{if .Unproven}}<h4>Not established</h4><ul>{{range .Unproven}}<li>{{.}}</li>{{end}}</ul>{{end}}
+<h4>Fix</h4>
+{{range .Fix}}<pre><code>{{.}}</code></pre>{{end}}
+{{if .Refs}}<h4>References</h4><ul>{{range .Refs}}<li><a href="{{.}}" rel="noopener noreferrer">{{.}}</a></li>{{end}}</ul>{{end}}
+</article>
+{{end}}
+{{end}}
+{{if .Credentials}}
+<h2>Credential graph</h2>
+{{range .Credentials}}
+<section>
+<h3>{{.Provider}} {{.Label}}</h3>
+<dl>
+{{if .Definitions}}<dt>Defined at</dt><dd>{{range .Definitions}}<code>{{.}}</code> {{end}}</dd>{{end}}
+{{if .Holders}}<dt>Held by</dt><dd><ul>{{range .Holders}}<li>{{.}}</li>{{end}}</ul></dd>{{end}}
+{{if .Environments}}<dt>Environments</dt><dd>{{.Environments}}</dd>{{end}}
+{{if .Reach}}<dt>If a holder is compromised</dt><dd>{{.Reach}}</dd>{{end}}
+</dl>
+</section>
+{{end}}
+{{end}}
+{{range .Extras}}
+<h2>{{.Title}}</h2>
+<pre><code>{{.Text}}</code></pre>
+{{end}}
+<h2>Coverage</h2>
+<ul>
+{{if .Coverage.Scanned}}<li>Files scanned: {{.Coverage.Scanned}}</li>{{end}}
+{{if .Coverage.Skipped}}<li>Files skipped: {{len .Coverage.Skipped}}{{if .Coverage.SkippedMore}} and {{.Coverage.SkippedMore}} more{{end}}<ul>{{range .Coverage.Skipped}}<li><code>{{.Path}}</code>: {{.Reason}}</li>{{end}}</ul></li>{{end}}
+{{range .Coverage.LogSources}}<li>Log source: {{.}}</li>{{end}}
+{{range .Coverage.Ranges}}<li>Time range for {{.}}</li>{{end}}
+{{if .Coverage.Rules}}<li>Rules not verified against provider documentation: {{range $index, $rule := .Coverage.Rules}}{{if $index}}, {{end}}{{$rule}}{{end}}</li>{{end}}
+{{if .Coverage.Detail}}<li>{{.Coverage.Detail}}</li>{{end}}
+</ul>
+</main>
+</body>
+</html>

@@ -473,3 +473,23 @@ func TestExportSigmaCommand(t *testing.T) {
 		t.Errorf("bad flag: code = %d, stderr = %s", code, stderr)
 	}
 }
+
+func TestHTMLFormatFromTheCommandLine(t *testing.T) {
+	leaky := writeTree(t, map[string]string{".env": "ANTHROPIC_API_KEY=" + testKey + "\n"})
+	for _, command := range []string{"scan", "report"} {
+		t.Run(command, func(t *testing.T) {
+			code, stdout, stderr := runCLI(t, command, "--format", "html", "--fail-on", "critical", leaky)
+			if code != exitOK {
+				t.Fatalf("exit code = %d (stderr: %s)", code, stderr)
+			}
+			for _, want := range []string{"<!DOCTYPE html>", "JP-KEY-001", "Credential graph", "<h2>Coverage</h2>"} {
+				if !strings.Contains(stdout, want) {
+					t.Errorf("stdout lacks %q", want)
+				}
+			}
+			if strings.Contains(stdout, testKey) {
+				t.Error("the page contains the full key")
+			}
+		})
+	}
+}

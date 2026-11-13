@@ -374,6 +374,7 @@ func TestWriteDispatch(t *testing.T) {
 		{"sarif", `"version": "2.1.0"`, false},
 		{"md", "# jackproof scan", false},
 		{"markdown", "# jackproof scan", false},
+		{"html", "<h1>jackproof scan</h1>", false},
 		{"pdf", "", true},
 	}
 	for _, tt := range tests {
@@ -388,7 +389,7 @@ func TestWriteDispatch(t *testing.T) {
 			}
 		})
 	}
-	if len(Formats()) != 4 {
+	if len(Formats()) != 5 {
 		t.Errorf("Formats = %v", Formats())
 	}
 }
@@ -416,5 +417,61 @@ func TestExtrasAreRendered(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestHTMLReport(t *testing.T) {
+	report := sampleReport()
+	report.Findings[0].Title = "Key <b>x</b> & more"
+	report.Findings[0].Evidence[0].Excerpt = "<script>alert(1)</script>"
+	report.Extras = []Extra{{Key: "plan", Title: "Rotation plan", Text: "1. Rotate <now>"}}
+	var out bytes.Buffer
+	if err := WriteHTML(&out, report); err != nil {
+		t.Fatal(err)
+	}
+	page := out.String()
+	for _, want := range []string{
+		`<html lang="en">`, "<h1>jackproof scan</h1>", "2 findings: 1 high, 1 medium", `id="finding-` + report.Findings[0].ID + `"`,
+		"Key &lt;b&gt;x&lt;/b&gt; &amp; more", "&lt;script&gt;alert(1)&lt;/script&gt;", "Credential graph", "OpenAI",
+		"held by", "Rotation plan", "1. Rotate &lt;now&gt;", "<h2>Coverage</h2>", "Files scanned: 3 (go 2, yaml 1)",
+		"third-party dependencies", `rel="noopener noreferrer"`, "Not verified against provider documentation: 2 provider key formats",
+	} {
+		if !strings.Contains(strings.ToLower(page), strings.ToLower(want)) {
+			t.Errorf("page lacks %q", want)
+		}
+	}
+	for _, forbidden := range []string{"<script", "src=", "<link ", "javascript:"} {
+		if strings.Contains(page, forbidden) {
+			t.Errorf("page contains %q", forbidden)
+		}
+	}
+}
+
+func TestHTMLReportWithNoFindings(t *testing.T) {
+	var out bytes.Buffer
+	if err := WriteHTML(&out, Report{Title: "jackproof scan", Coverage: finding.Coverage{FilesScanned: map[string]int{"go": 1}}}); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "does not show the target is safe") || strings.Contains(out.String(), "<h2>Findings</h2>") {
+		t.Errorf("page = %s", out.String())
+	}
+}
+
+func TestTextReportShowsOnlyTheFirstParagraphOfTheFix(t *testing.T) {
+	report := sampleReport()
+	report.Findings[0].Remediation = "Revoke the key.\n\nSnippet line one\nSnippet line two"
+	var out bytes.Buffer
+	if err := WriteText(&out, report); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "fix: Revoke the key.") || strings.Contains(out.String(), "Snippet line") {
+		t.Errorf("text = %s", out.String())
+	}
+	var markdown bytes.Buffer
+	if err := WriteMarkdown(&markdown, report); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(markdown.String(), "Snippet line two") {
+		t.Error("markdown must keep the full fix")
 	}
 }

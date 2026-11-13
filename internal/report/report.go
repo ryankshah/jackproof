@@ -152,7 +152,7 @@ func kindSummary(c finding.Coverage) string {
 	return strings.Join(parts, ", ")
 }
 
-var formats = []string{"text", "json", "sarif", "md"}
+var formats = []string{"text", "json", "sarif", "md", "html"}
 
 func Formats() []string {
 	return append([]string(nil), formats...)
@@ -168,6 +168,8 @@ func Write(w io.Writer, format string, r Report) error {
 		return WriteSARIF(w, r)
 	case "md", "markdown":
 		return WriteMarkdown(w, r)
+	case "html":
+		return WriteHTML(w, r)
 	}
 	return fmt.Errorf("unknown format %q: want %s", format, strings.Join(formats, ", "))
 }
@@ -184,4 +186,9 @@ func capitalizeFirst(text string) string {
 		return text
 	}
 	return strings.ToUpper(text[:1]) + text[1:]
+}
+
+func firstParagraph(text string) string {
+	paragraph, _, _ := strings.Cut(text, "\n\n")
+	return paragraph
 }
