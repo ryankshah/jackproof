@@ -24,9 +24,11 @@ func buildGraph() *Graph {
 
 func TestAddCredentialMergesDefinitions(t *testing.T) {
 	g := buildGraph()
-	credential, ok := g.Credential("literal:aaaa")
-	if !ok {
-		t.Fatal("credential missing")
+	var credential Credential
+	for _, candidate := range g.Credentials() {
+		if candidate.Key == "literal:aaaa" {
+			credential = candidate
+		}
 	}
 	want := []Location{{"a.env", 1}, {"b.env", 4}}
 	if !reflect.DeepEqual(credential.Definitions, want) {
@@ -58,17 +60,6 @@ func TestAddHolderIsIdempotent(t *testing.T) {
 	stored, _ := g.Holder(first)
 	if stored.Environment != "" {
 		t.Errorf("second add overwrote the holder: %+v", stored)
-	}
-}
-
-func TestUpdateHolder(t *testing.T) {
-	g := New()
-	id := g.AddHolder(Holder{Kind: HolderCode, Name: "main.go", Location: Location{"main.go", 1}})
-	g.UpdateHolder(id, func(h *Holder) { h.Untrusted = true })
-	g.UpdateHolder("missing", func(h *Holder) { h.Untrusted = true })
-	holder, _ := g.Holder(id)
-	if !holder.Untrusted {
-		t.Error("holder was not updated")
 	}
 }
 

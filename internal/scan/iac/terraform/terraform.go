@@ -133,10 +133,6 @@ func convertBlock(filePath string, block *hclsyntax.Block) *Block {
 	return converted
 }
 
-func (m *Module) Blocks() []*Block {
-	return append([]*Block(nil), m.blocks...)
-}
-
 func (m *Module) Resources(resourceType string) []*Block {
 	var out []*Block
 	for _, block := range m.blocks {
@@ -155,15 +151,6 @@ func (m *Module) DataSources(dataType string) []*Block {
 		}
 	}
 	return out
-}
-
-func (m *Module) Find(address string) (*Block, bool) {
-	for _, block := range m.blocks {
-		if (block.Type == "resource" || block.Type == "data") && block.Address() == address {
-			return block, true
-		}
-	}
-	return nil, false
 }
 
 func (m *Module) ResourceTypes() []string {

@@ -248,9 +248,6 @@ func TestCatalogueLookups(t *testing.T) {
 		})
 	}
 
-	if names := catalogue.EnvVars(); len(names) == 0 {
-		t.Error("EnvVars returned nothing")
-	}
 	if len(catalogue.Providers()) < 15 {
 		t.Errorf("catalogue has %d providers, want at least 15", len(catalogue.Providers()))
 	}

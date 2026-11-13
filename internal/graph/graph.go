@@ -135,12 +135,6 @@ func (g *Graph) AddHolder(h Holder) string {
 	return h.ID
 }
 
-func (g *Graph) UpdateHolder(id string, update func(*Holder)) {
-	if holder, ok := g.holders[id]; ok {
-		update(holder)
-	}
-}
-
 func (g *Graph) AddEdge(e Edge) {
 	key := fmt.Sprintf("%s|%s|%s|%s|%d", e.Credential, e.Holder, e.Delivery, e.Location.Path, e.Location.Line)
 	if _, seen := g.edgeKeys[key]; seen {
@@ -148,14 +142,6 @@ func (g *Graph) AddEdge(e Edge) {
 	}
 	g.edgeKeys[key] = struct{}{}
 	g.edges = append(g.edges, e)
-}
-
-func (g *Graph) Credential(key string) (Credential, bool) {
-	credential, ok := g.credentials[key]
-	if !ok {
-		return Credential{}, false
-	}
-	return *credential, true
 }
 
 func (g *Graph) Holder(id string) (Holder, bool) {

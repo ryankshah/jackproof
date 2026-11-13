@@ -77,21 +77,15 @@ func TestBlocksAndAddresses(t *testing.T) {
 	if len(role.Children("inline_policy")) != 1 {
 		t.Errorf("children = %+v", role.Blocks)
 	}
-	doc, ok := module.Find("data.aws_iam_policy_document.doc")
-	if !ok || len(doc.Children("statement")) != 1 {
-		t.Errorf("document = %+v, %v", doc, ok)
-	}
-	if got := len(module.DataSources("aws_iam_policy_document")); got != 1 {
-		t.Errorf("data sources = %d", got)
+	documents := module.DataSources("aws_iam_policy_document")
+	if len(documents) != 1 || documents[0].Address() != "data.aws_iam_policy_document.doc" || len(documents[0].Children("statement")) != 1 {
+		t.Errorf("documents = %+v", documents)
 	}
 	if !reflect.DeepEqual(module.ResourceTypes(), []string{"aws_iam_policy", "aws_iam_role", "aws_iam_role_policy_attachment"}) {
 		t.Errorf("types = %v", module.ResourceTypes())
 	}
-	if _, ok := module.Find("aws_iam_role.missing"); ok {
-		t.Error("found a resource that does not exist")
-	}
-	if len(module.Blocks()) == 0 {
-		t.Error("no blocks")
+	if got := module.Resources("aws_iam_missing"); len(got) != 0 {
+		t.Errorf("found resources that do not exist: %+v", got)
 	}
 }
 
@@ -151,9 +145,6 @@ resource "r" "t" {
 	}
 	if value, ok := module.Bool(attr("on")); !ok || !value {
 		t.Errorf("bool = %v, %v", value, ok)
-	}
-	if value, ok := module.Number(attr("count_n")); !ok || value != 3 {
-		t.Errorf("number = %v, %v", value, ok)
 	}
 	if got := module.Strings(attr("names")); !reflect.DeepEqual(got, []string{"a", "b"}) {
 		t.Errorf("strings = %v", got)

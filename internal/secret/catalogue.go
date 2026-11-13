@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
@@ -162,15 +161,6 @@ func (c *Catalogue) ProviderForName(name string) (string, bool) {
 		}
 	}
 	return best.provider, best.provider != ""
-}
-
-func (c *Catalogue) EnvVars() []string {
-	names := make([]string, 0, len(c.byEnvVar))
-	for name := range c.byEnvVar {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	return names
 }
 
 type UnverifiedFormat struct {

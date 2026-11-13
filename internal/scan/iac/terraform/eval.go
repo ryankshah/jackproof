@@ -214,15 +214,6 @@ func (m *Module) Strings(attribute *Attribute) []string {
 	return stringsOf(value)
 }
 
-func (m *Module) Number(attribute *Attribute) (float64, bool) {
-	value, known := m.Eval(attribute)
-	if !known || value.IsNull() || value.Type() != cty.Number {
-		return 0, false
-	}
-	number, _ := value.AsBigFloat().Float64()
-	return number, true
-}
-
 func stringsOf(value cty.Value) []string {
 	switch {
 	case value.Type() == cty.String:
