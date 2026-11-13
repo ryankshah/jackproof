@@ -45,6 +45,7 @@ type Credential struct {
 	Key         string         `json:"key"`
 	Kind        CredentialKind `json:"kind"`
 	Provider    string         `json:"provider"`
+	Reach       string         `json:"reach,omitempty"`
 	Name        string         `json:"name,omitempty"`
 	Redacted    string         `json:"redacted,omitempty"`
 	Fingerprint string         `json:"fingerprint,omitempty"`
