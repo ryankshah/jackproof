@@ -1,0 +1,30 @@
+go:
+  - {provider: openai, import: github.com/openai/openai-go, package: openai, verified: false}
+  - {provider: openai, import: github.com/sashabaranov/go-openai, package: openai, verified: false}
+  - {provider: anthropic, import: github.com/anthropics/anthropic-sdk-go, package: anthropic, verified: false}
+  - {provider: google-ai-studio, import: google.golang.org/genai, package: genai, verified: false}
+  - {provider: google-ai-studio, import: github.com/google/generative-ai-go/genai, package: genai, verified: false}
+  - {provider: aws, import: github.com/aws/aws-sdk-go-v2/service/bedrockruntime, package: bedrockruntime, verified: false}
+  - {provider: gcp, import: cloud.google.com/go/vertexai/genai, package: genai, verified: false}
+  - {provider: cohere, import: github.com/cohere-ai/cohere-go, package: cohere, verified: false}
+python:
+  - {provider: anthropic, pattern: '\b(?:anthropic\.)?(?:Async)?Anthropic(?:Bedrock|Vertex)?\s*\(', verified: false}
+  - {provider: azure-openai, pattern: '\b(?:openai\.)?(?:Async)?AzureOpenAI\s*\(', verified: false}
+  - {provider: openai, pattern: '\b(?:openai\.)?(?:Async)?OpenAI\s*\(', verified: false}
+  - {provider: aws, pattern: 'boto3\.client\(\s*["'']bedrock(?:-agent)?-runtime["'']', verified: false}
+  - {provider: gcp, pattern: '\bvertexai\.init\s*\(', verified: false}
+  - {provider: google-ai-studio, pattern: '\bgenai\.(?:Client|configure)\s*\(', verified: false}
+  - {provider: cohere, pattern: '\bcohere\.(?:Async)?Client(?:V2)?\s*\(', verified: false}
+  - {provider: mistral, pattern: '\bMistral\s*\(', verified: false}
+  - {provider: groq, pattern: '\b(?:Async)?Groq\s*\(', verified: false}
+  - {provider: together, pattern: '\bTogether\s*\(', verified: false}
+  - {provider: huggingface, pattern: '\b(?:Async)?InferenceClient\s*\(', verified: false}
+javascript:
+  - {provider: openai, pattern: '\bnew\s+OpenAI\s*\(', verified: false}
+  - {provider: anthropic, pattern: '\bnew\s+Anthropic\s*\(', verified: false}
+  - {provider: google-ai-studio, pattern: '\bnew\s+(?:GoogleGenerativeAI|GoogleGenAI)\s*\(', verified: false}
+  - {provider: aws, pattern: '\bnew\s+BedrockRuntimeClient\s*\(', verified: false}
+  - {provider: cohere, pattern: '\bnew\s+CohereClient(?:V2)?\s*\(', verified: false}
+  - {provider: groq, pattern: '\bnew\s+Groq\s*\(', verified: false}
+  - {provider: mistral, pattern: '\bnew\s+Mistral\s*\(', verified: false}
+  - {provider: huggingface, pattern: '\bnew\s+(?:HfInference|InferenceClient)\s*\(', verified: false}
