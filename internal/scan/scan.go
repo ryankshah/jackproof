@@ -207,3 +207,10 @@ func directoryOf(filePath string) string {
 func joinPath(directory, name string) string {
 	return strings.TrimPrefix(path.Join(directory, name), "./")
 }
+
+func (r *run) reachOf(id string) string {
+	if provider, ok := r.scanner.secrets.Provider(id); ok {
+		return provider.Reach
+	}
+	return ""
+}

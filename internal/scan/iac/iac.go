@@ -90,7 +90,7 @@ func ClassifyValue(value string) (ValueKind, string) {
 func LooksUntrusted(names ...string) (string, bool) {
 	for _, name := range names {
 		if match := untrustedName.FindStringSubmatch(name); match != nil {
-			return "the name " + quote(name) + " suggests it runs untrusted or user-supplied code", true
+			return "the name " + quote(name), true
 		}
 	}
 	return "", false

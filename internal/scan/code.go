@@ -12,7 +12,7 @@ import (
 	"github.com/ryankshah/jackproof/internal/scan/lang"
 )
 
-const notebookUntrustedReason = "notebook kernels run arbitrary cell code"
+const notebookUntrustedReason = "the notebook format"
 
 func (r *run) processCode(file *sourceFile, hits []literalHit) {
 	language := file.kind

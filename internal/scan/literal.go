@@ -46,6 +46,7 @@ func (r *run) recordLiteral(file *sourceFile, line int, match secret.Match, exam
 		Key:         literalKey(match.Fingerprint),
 		Kind:        graph.KindLiteral,
 		Provider:    match.Provider,
+		Reach:       r.reachOf(match.Provider),
 		Redacted:    match.Redacted,
 		Fingerprint: match.Fingerprint,
 		Definitions: []graph.Location{{Path: file.path, Line: line}},

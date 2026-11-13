@@ -179,7 +179,7 @@ func (r *run) providerForSecret(variable iac.EnvVar) (string, bool) {
 
 func (r *run) bindLiteral(edge graph.Edge, provider, redacted, fingerprint string, inferred bool) {
 	key := literalKey(fingerprint)
-	r.graph.AddCredential(graph.Credential{Key: key, Kind: graph.KindLiteral, Provider: provider, Redacted: redacted, Fingerprint: fingerprint})
+	r.graph.AddCredential(graph.Credential{Key: key, Kind: graph.KindLiteral, Provider: provider, Reach: r.reachOf(provider), Redacted: redacted, Fingerprint: fingerprint})
 	edge.Credential = key
 	edge.Inferred = inferred
 	r.graph.AddEdge(edge)
@@ -187,7 +187,7 @@ func (r *run) bindLiteral(edge graph.Edge, provider, redacted, fingerprint strin
 
 func (r *run) bindReference(edge graph.Edge, identity, provider string, inferred bool) {
 	key := referenceKey(identity)
-	r.graph.AddCredential(graph.Credential{Key: key, Kind: graph.KindReference, Provider: provider, Name: identity})
+	r.graph.AddCredential(graph.Credential{Key: key, Kind: graph.KindReference, Provider: provider, Reach: r.reachOf(provider), Name: identity})
 	edge.Credential = key
 	edge.Inferred = inferred
 	r.graph.AddEdge(edge)

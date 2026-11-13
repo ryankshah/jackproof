@@ -23,6 +23,13 @@ func (r *run) describe(credential graph.Credential) string {
 	return fmt.Sprintf("%s credential %s", r.providerName(credential.Provider), label)
 }
 
+func describeSink(sink graph.Sink) string {
+	if sink.Kind == graph.SinkEnvDump {
+		return fmt.Sprintf("an environment dump (%s)", sink.Detail)
+	}
+	return fmt.Sprintf("telemetry configured by %s", sink.Detail)
+}
+
 func (r *run) crossEnvironment() {
 	for _, credential := range r.graph.Credentials() {
 		environments := r.graph.Environments(credential.Key)
@@ -72,7 +79,7 @@ func (r *run) untrustedWorkloads() {
 
 			confidence := finding.ConfidenceMedium
 			flags := []finding.Flag{finding.FlagInferred}
-			unproven := []string{"Whether this workload runs untrusted or user-supplied code. " + holder.UntrustedReason + "."}
+			unproven := []string{"Whether this workload runs untrusted or user-supplied code. It was inferred from " + holder.UntrustedReason + "."}
 			switch {
 			case holder.UntrustedProven:
 				confidence = finding.ConfidenceHigh
@@ -114,7 +121,7 @@ func (r *run) sharedSinks() {
 			}
 			r.emit(findingSpec{
 				rule:       ruleSharedSink,
-				title:      fmt.Sprintf("%s is in the environment of %s, which has a %s", r.describe(credential), holder.Name, sink.Kind),
+				title:      fmt.Sprintf("%s is in the environment of %s, which has %s", r.describe(credential), holder.Name, describeSink(sink)),
 				method:     finding.MethodIaCParse,
 				confidence: finding.ConfidenceMedium,
 				flags:      []finding.Flag{finding.FlagInferred},

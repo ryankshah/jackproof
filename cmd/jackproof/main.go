@@ -10,31 +10,69 @@ import (
 var version = "dev"
 
 const (
-	exitOK    = 0
-	exitUsage = 2
+	exitOK       = 0
+	exitFindings = 1
+	exitUsage    = 2
 )
 
-var errUsage = errors.New("usage: jackproof <command>\ncommands: version")
+var (
+	errFindings = errors.New("findings at or above the fail-on severity")
+	errUsage    = errors.New("usage error")
+)
+
+const usageText = `usage: jackproof <command> [flags] [arguments]
+
+commands:
+  scan [path...]       find LLM credentials and the workloads that can read them
+  report [path...]     build one report across modules
+  rules list           list the rule catalogue
+  rules show <id>      show one rule
+  version              print the version
+
+Run "jackproof <command> -h" for the flags of a command.
+Exit codes: 0 no findings at or above --fail-on, 1 findings found, 2 usage or runtime error.
+`
 
 func main() {
-	if err := run(os.Args[1:], os.Stdout); err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "jackproof: %v\n", err)
-		os.Exit(exitUsage)
-	}
-	os.Exit(exitOK)
+	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
 }
 
-func run(args []string, stdout io.Writer) error {
-	if len(args) == 0 {
-		return errUsage
-	}
-	switch args[0] {
-	case "version":
-		if _, err := fmt.Fprintln(stdout, version); err != nil {
-			return fmt.Errorf("write version: %w", err)
-		}
-		return nil
+func run(args []string, stdout, stderr io.Writer) int {
+	err := dispatch(args, stdout)
+	switch {
+	case err == nil:
+		return exitOK
+	case errors.Is(err, errFindings):
+		return exitFindings
 	default:
-		return fmt.Errorf("unknown command %q\n%w", args[0], errUsage)
+		_, _ = fmt.Fprintf(stderr, "jackproof: %v\n", err)
+		return exitUsage
 	}
+}
+
+func dispatch(args []string, stdout io.Writer) error {
+	if len(args) == 0 {
+		return fmt.Errorf("%w\n\n%s", errUsage, usageText)
+	}
+	command, rest := args[0], args[1:]
+	switch command {
+	case "scan":
+		return runScan(rest, stdout)
+	case "report":
+		return runReport(rest, stdout)
+	case "rules":
+		return runRules(rest, stdout)
+	case "version":
+		return writeLine(stdout, version)
+	case "help", "-h", "--help":
+		return writeLine(stdout, usageText)
+	}
+	return fmt.Errorf("%w: unknown command %q\n\n%s", errUsage, command, usageText)
+}
+
+func writeLine(w io.Writer, text string) error {
+	if _, err := fmt.Fprintln(w, text); err != nil {
+		return fmt.Errorf("write output: %w", err)
+	}
+	return nil
 }

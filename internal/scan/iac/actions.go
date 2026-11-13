@@ -52,7 +52,7 @@ func ParseActions(path string, data []byte) ([]Workload, error) {
 			}
 			if triggers[pullRequestTarget] {
 				workload.Untrusted = true
-				workload.UntrustedReason = "the workflow runs on pull_request_target, which runs with the base repository secrets"
+				workload.UntrustedReason = "the pull_request_target trigger"
 				workload.UntrustedProven = checksOutPullRequest
 			}
 			workloads = append(workloads, workload)
