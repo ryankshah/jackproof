@@ -1,0 +1,9 @@
+id: JP-EXP-003
+title: Credential named in an exposure notice still authenticates
+severity: critical
+verified: false
+matcher: exposed-credential-live
+description: A read-only metadata request to the provider succeeded with the credential. The credential has not been revoked, so anyone who holds it can use the account.
+remediation: Revoke the credential at the provider now. Deleting it from a secret store, CI setting or file does not revoke it.
+refs:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html

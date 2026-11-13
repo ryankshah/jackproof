@@ -1,0 +1,9 @@
+id: JP-EXP-001
+title: Credential named in an exposure notice is defined or used here
+severity: high
+verified: true
+matcher: exposed-credential-location
+description: A fingerprint, secret name or key supplied from an exposure notice matches a credential that this code defines, references or injects into a workload. Each listed location needs the replacement credential, and the old credential stays valid until the provider revokes it.
+remediation: Follow the rotation plan. Create the replacement first, update every listed location, restart the workloads in the listed order, then revoke the old credential at the provider.
+refs:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html

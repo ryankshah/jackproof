@@ -134,25 +134,23 @@ func defaultPaths(paths []string) []string {
 	return paths
 }
 
-func emit(stdout io.Writer, flags commonFlags, kit toolkit, title string, result *scan.Result) error {
+func scanReport(title string, result *scan.Result) report.Report {
+	return report.Report{Title: title, Findings: result.Findings, Coverage: result.Coverage, Graph: result.Graph}
+}
+
+func emit(stdout io.Writer, flags commonFlags, kit toolkit, rep report.Report) error {
 	filter, threshold, err := flags.filter()
 	if err != nil {
 		return err
 	}
-	findings := filter.Apply(result.Findings)
-	rep := report.Report{
-		Title:     title,
-		Version:   version,
-		Findings:  findings,
-		Coverage:  result.Coverage,
-		Graph:     result.Graph,
-		Rules:     kit.rules,
-		Providers: kit.providerNames(),
-	}
+	rep.Findings = filter.Apply(rep.Findings)
+	rep.Version = version
+	rep.Rules = kit.rules
+	rep.Providers = kit.providerNames()
 	if err := report.Write(stdout, flags.format, rep); err != nil {
 		return fmt.Errorf("write report: %w", err)
 	}
-	if highest, found := finding.HighestSeverity(findings); found && highest.AtLeast(threshold) {
+	if highest, found := finding.HighestSeverity(rep.Findings); found && highest.AtLeast(threshold) {
 		return errFindings
 	}
 	return nil

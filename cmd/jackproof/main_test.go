@@ -28,8 +28,13 @@ func writeTree(t *testing.T, files map[string]string) string {
 
 func runCLI(t *testing.T, args ...string) (int, string, string) {
 	t.Helper()
+	return runCLIWithInput(t, "", args...)
+}
+
+func runCLIWithInput(t *testing.T, input string, args ...string) (int, string, string) {
+	t.Helper()
 	var stdout, stderr bytes.Buffer
-	code := run(args, &stdout, &stderr)
+	code := run(args, strings.NewReader(input), &stdout, &stderr)
 	return code, stdout.String(), stderr.String()
 }
 
@@ -181,5 +186,125 @@ func TestRulesCommands(t *testing.T) {
 	code, stdout, _ = runCLI(t, "rules", "show", "jp-key-020")
 	if code != exitOK || !strings.Contains(stdout, "pull_request_target") || !strings.Contains(stdout, "ref: https://") {
 		t.Errorf("show: code = %d, stdout = %s", code, stdout)
+	}
+}
+
+func exposureFixture(t *testing.T) (string, string) {
+	t.Helper()
+	key := "sk-" + strings.Repeat("b", 48)
+	root := writeTree(t, map[string]string{
+		".env":                     "OPENAI_API_KEY=" + key + "\n",
+		"compose.yaml":             "services:\n  api:\n    env_file: .env\n",
+		".github/workflows/ci.yml": "on: push\njobs:\n  j:\n    runs-on: x\n    env:\n      OPENAI_API_KEY: ${{ secrets.OPENAI_PROD_KEY }}\n    steps:\n      - run: echo\n",
+	})
+	return root, key
+}
+
+func TestExposureByFingerprintNameAndKey(t *testing.T) {
+	root, key := exposureFixture(t)
+	fingerprints := filepath.Join(t.TempDir(), "fingerprints.txt")
+	if err := os.WriteFile(fingerprints, []byte("# from the provider\n"+secretFingerprint(key)+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	names := filepath.Join(t.TempDir(), "names.txt")
+	if err := os.WriteFile(names, []byte("OPENAI_PROD_KEY\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name     string
+		args     []string
+		input    string
+		wantCode int
+		want     []string
+	}{
+		{"fingerprint", []string{"exposure", "--fingerprints", fingerprints, root}, "", exitFindings, []string{"JP-EXP-001", "## Rotation plan", "**Revoke.**", "Deleting a stored secret does not revoke it"}},
+		{"secret name", []string{"exposure", "--secret-names", names, root}, "", exitFindings, []string{"JP-EXP-001", "Secret name OPENAI_PROD_KEY"}},
+		{"raw key on stdin", []string{"exposure", "--keys-stdin", root}, key + "\n", exitFindings, []string{"JP-EXP-001", "Fingerprint da681160a0224a55 (sha256)"}},
+		{"not found", []string{"exposure", "--secret-names", names, t.TempDir()}, "", exitOK, []string{"JP-EXP-002"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			code, stdout, stderr := runCLIWithInput(t, tt.input, tt.args...)
+			if code != tt.wantCode {
+				t.Errorf("exit code = %d, want %d (stderr: %s)", code, tt.wantCode, stderr)
+			}
+			for _, want := range tt.want {
+				if !strings.Contains(stdout, want) {
+					t.Errorf("stdout lacks %q:\n%s", want, stdout)
+				}
+			}
+			if strings.Contains(stdout, key) {
+				t.Error("output contains the full key")
+			}
+		})
+	}
+}
+
+func TestExposureJSONIncludesPlan(t *testing.T) {
+	root, key := exposureFixture(t)
+	code, stdout, stderr := runCLIWithInput(t, key+"\n", "exposure", "--keys-stdin", "--format", "json", "--fail-on", "critical", root)
+	if code != exitOK {
+		t.Fatalf("exit code = %d (stderr: %s)", code, stderr)
+	}
+	var decoded struct {
+		Extras struct {
+			RotationPlan struct {
+				Statement   string
+				Credentials []struct{ Steps []struct{ Phase string } }
+			} `json:"rotation_plan"`
+		}
+	}
+	if err := json.Unmarshal([]byte(stdout), &decoded); err != nil {
+		t.Fatalf("output is not json: %v", err)
+	}
+	plan := decoded.Extras.RotationPlan
+	if !strings.Contains(plan.Statement, "does not revoke") || len(plan.Credentials) != 1 || len(plan.Credentials[0].Steps) < 5 {
+		t.Errorf("plan = %+v", plan)
+	}
+}
+
+func TestExposureUsageErrors(t *testing.T) {
+	root, _ := exposureFixture(t)
+	badAlgo := filepath.Join(t.TempDir(), "f.txt")
+	if err := os.WriteFile(badAlgo, []byte("abcd\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{"no input", []string{"exposure", root}, "needs at least one of"},
+		{"missing fingerprint file", []string{"exposure", "--fingerprints", filepath.Join(t.TempDir(), "none.txt"), root}, "read fingerprints"},
+		{"malformed fingerprint", []string{"exposure", "--fingerprints", badAlgo, root}, "fingerprint must be"},
+		{"verify without keys", []string{"exposure", "verify"}, "needs --keys-stdin"},
+		{"verify without live flag", []string{"exposure", "verify", "--keys-stdin"}, "--verify-live"},
+		{"verify without ownership", []string{"exposure", "verify", "--keys-stdin", "--verify-live"}, "--i-own-these-keys"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			code, _, stderr := runCLI(t, tt.args...)
+			if code != exitUsage || !strings.Contains(stderr, tt.want) {
+				t.Errorf("code = %d, stderr = %q, want it to contain %q", code, stderr, tt.want)
+			}
+		})
+	}
+}
+
+func TestExposureVerifyWithoutNetwork(t *testing.T) {
+	code, stdout, stderr := runCLIWithInput(t, "not a key\n", "exposure", "verify", "--keys-stdin", "--verify-live", "--i-own-these-keys")
+	if code != exitFindings {
+		t.Errorf("exit code = %d, want %d (stderr: %s)", code, exitFindings, stderr)
+	}
+	for _, want := range []string{"unsupported", "could not be identified", "Deleting a stored secret does not revoke it"} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("stdout lacks %q:\n%s", want, stdout)
+		}
+	}
+
+	code, _, stderr = runCLIWithInput(t, "\n\n", "exposure", "verify", "--keys-stdin", "--verify-live", "--i-own-these-keys")
+	if code != exitUsage || !strings.Contains(stderr, "no keys were provided") {
+		t.Errorf("empty input: code = %d, stderr = %s", code, stderr)
 	}
 }

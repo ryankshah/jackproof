@@ -1,0 +1,9 @@
+id: JP-EXP-002
+title: Credential named in an exposure notice was not found in the scanned paths
+severity: medium
+verified: true
+matcher: exposed-credential-not-found
+description: A fingerprint, secret name or key supplied from an exposure notice did not match anything in the scanned paths. This does not show that the credential is unused. Other repositories, CI settings, secret managers, developer machines and deployed systems can still hold it.
+remediation: Search the other places that can hold the credential. Revoke it at the provider even when no use is found, because a credential named in an exposure notice is exposed.
+refs:
+  - https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html

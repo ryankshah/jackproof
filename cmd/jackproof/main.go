@@ -25,6 +25,8 @@ const usageText = `usage: jackproof <command> [flags] [arguments]
 commands:
   scan [path...]       find LLM credentials and the workloads that can read them
   report [path...]     build one report across modules
+  exposure [path...]   locate exposed credentials and plan their rotation
+  exposure verify      check that old credentials no longer authenticate
   rules list           list the rule catalogue
   rules show <id>      show one rule
   version              print the version
@@ -34,11 +36,11 @@ Exit codes: 0 no findings at or above --fail-on, 1 findings found, 2 usage or ru
 `
 
 func main() {
-	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
+	os.Exit(run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
 }
 
-func run(args []string, stdout, stderr io.Writer) int {
-	err := dispatch(args, stdout)
+func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	err := dispatch(args, stdin, stdout)
 	switch {
 	case err == nil:
 		return exitOK
@@ -50,7 +52,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	}
 }
 
-func dispatch(args []string, stdout io.Writer) error {
+func dispatch(args []string, stdin io.Reader, stdout io.Writer) error {
 	if len(args) == 0 {
 		return fmt.Errorf("%w\n\n%s", errUsage, usageText)
 	}
@@ -60,6 +62,8 @@ func dispatch(args []string, stdout io.Writer) error {
 		return runScan(rest, stdout)
 	case "report":
 		return runReport(rest, stdout)
+	case "exposure":
+		return runExposure(rest, stdin, stdout)
 	case "rules":
 		return runRules(rest, stdout)
 	case "version":

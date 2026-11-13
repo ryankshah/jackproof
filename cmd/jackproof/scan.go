@@ -32,5 +32,5 @@ func scanAndEmit(stdout io.Writer, flags commonFlags, paths []string, title stri
 	if err != nil {
 		return fmt.Errorf("scan: %w", err)
 	}
-	return emit(stdout, flags, kit, title, result)
+	return emit(stdout, flags, kit, scanReport(title, result))
 }
