@@ -366,3 +366,110 @@ func TestReportCombinesScanAndPosture(t *testing.T) {
 		t.Errorf("terraform files must be counted once: %+v", decoded.Coverage.FilesScanned)
 	}
 }
+
+func trailRecord(id, name, source, time, ip string) string {
+	return `{"eventID":"` + id + `","eventTime":"` + time + `","eventSource":"` + source + `","eventName":"` + name + `","awsRegion":"us-east-1","sourceIPAddress":"` + ip + `",` +
+		`"userAgent":"sdk","recipientAccountId":"111122223333","userIdentity":{"arn":"arn:aws:iam::111122223333:role/chat","accountId":"111122223333"}}`
+}
+
+func TestHuntCommand(t *testing.T) {
+	trail := `{"Records":[` + strings.Join([]string{
+		trailRecord("e1", "PutFoundationModelEntitlement", "bedrock.amazonaws.com", "2026-03-01T10:00:00Z", "203.0.113.5"),
+		trailRecord("e2", "InvokeModel", "bedrock.amazonaws.com", "2026-03-01T10:05:00Z", "203.0.113.5"),
+		trailRecord("e3", "DescribeInstances", "ec2.amazonaws.com", "2026-03-01T10:06:00Z", "203.0.113.5"),
+	}, ",") + `]}`
+	dir := t.TempDir()
+	logPath := filepath.Join(dir, "trail.json")
+	if err := os.WriteFile(logPath, []byte(trail), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	code, stdout, stderr := runCLI(t, "hunt", "--source", "cloudtrail", logPath)
+	if code != exitFindings {
+		t.Fatalf("exit code = %d (stderr: %s)", code, stderr)
+	}
+	for _, want := range []string{"JP-HUNT-001", "e1 at 2026-03-01T10:00:00Z", "log source: cloudtrail: " + logPath + ", 2 relevant events", "time range for " + logPath + ": 2026-03-01T10:00:00Z to 2026-03-01T10:05:00Z"} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("stdout lacks %q:\n%s", want, stdout)
+		}
+	}
+
+	code, stdout, _ = runCLI(t, "hunt", "--source", "cloudtrail", "--format", "json", "--fail-on", "critical", logPath)
+	if code != exitOK || !strings.Contains(stdout, `"log_sources"`) || !strings.Contains(stdout, `"time_ranges"`) {
+		t.Errorf("json: code = %d, stdout = %.300s", code, stdout)
+	}
+
+	graph := filepath.Join(dir, "scan.json")
+	if err := os.WriteFile(graph, []byte(`{"graph":{"holders":[{"providers":["openai"]}]}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, stdout, _ = runCLI(t, "hunt", "--source", "cloudtrail", "--graph", graph, "--fail-on", "critical", logPath)
+	if !strings.Contains(stdout, "JP-HUNT-007") || !strings.Contains(stdout, "no scanned code calls that service") {
+		t.Errorf("graph cross-reference missing:\n%s", stdout)
+	}
+}
+
+func TestHuntUsageErrors(t *testing.T) {
+	dir := t.TempDir()
+	logPath := filepath.Join(dir, "x.json")
+	if err := os.WriteFile(logPath, []byte(`[]`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	badGraph := filepath.Join(dir, "bad.json")
+	if err := os.WriteFile(badGraph, []byte(`not json`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{"no source", []string{"hunt", logPath}, "needs --source"},
+		{"no files", []string{"hunt", "--source", "cloudtrail"}, "at least one log file"},
+		{"unknown source", []string{"hunt", "--source", "syslog", logPath}, "unknown source type"},
+		{"missing file", []string{"hunt", "--source", "cloudtrail", filepath.Join(dir, "absent.json")}, "read log file"},
+		{"bad graph", []string{"hunt", "--source", "cloudtrail", "--graph", badGraph, logPath}, "--graph"},
+		{"bad columns", []string{"hunt", "--source", "usage", "--usage-columns", "oops", logPath}, "--usage-columns"},
+		{"missing network map", []string{"hunt", "--source", "cloudtrail", "--asn-map", filepath.Join(dir, "none.csv"), logPath}, "read network map"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			code, _, stderr := runCLI(t, tt.args...)
+			if code != exitUsage || !strings.Contains(stderr, tt.want) {
+				t.Errorf("code = %d, stderr = %q, want %q", code, stderr, tt.want)
+			}
+		})
+	}
+}
+
+func TestHuntUsageCSVAndAzureNote(t *testing.T) {
+	dir := t.TempDir()
+	usage := filepath.Join(dir, "usage.csv")
+	if err := os.WriteFile(usage, []byte("ts,key,requests\n2026-03-01T10:00:00Z,key-1,5\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	code, stdout, stderr := runCLI(t, "hunt", "--source", "usage", "--usage-columns", "timestamp=ts,principal=key", usage)
+	if code != exitOK || !strings.Contains(stdout, "1 relevant events") {
+		t.Errorf("usage: code = %d, stdout = %s, stderr = %s", code, stdout, stderr)
+	}
+	azure := filepath.Join(dir, "activity.json")
+	record := `[{"operationName":"Microsoft.CognitiveServices/accounts/write","caller":"c","eventTimestamp":"2026-03-01T10:00:00Z","status":"Succeeded"}]`
+	if err := os.WriteFile(azure, []byte(record), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, stdout, _ = runCLI(t, "hunt", "--source", "azure", azure)
+	if !strings.Contains(stdout, "does not record model invocations") {
+		t.Errorf("azure note missing:\n%s", stdout)
+	}
+}
+
+func TestExportSigmaCommand(t *testing.T) {
+	root := writeTree(t, map[string]string{"jackproof.yaml": "hunt:\n  distinct_ips: 9\n"})
+	code, stdout, stderr := runCLI(t, "hunt", "export-sigma", "--config", filepath.Join(root, "jackproof.yaml"))
+	if code != exitOK || !strings.HasPrefix(stdout, "title: Bedrock model access enabled") || !strings.Contains(stdout, "gte: 9") || !strings.Contains(stdout, "\n---\n") {
+		t.Errorf("code = %d, stderr = %s, stdout = %.200s", code, stderr, stdout)
+	}
+	if code, _, stderr := runCLI(t, "hunt", "export-sigma", "--bogus"); code != exitUsage || !strings.Contains(stderr, "hunt export-sigma") {
+		t.Errorf("bad flag: code = %d, stderr = %s", code, stderr)
+	}
+}

@@ -26,6 +26,8 @@ commands:
   scan [path...]       find LLM credentials and the workloads that can read them
   posture [path...]    evaluate whether model services can be enabled and abused
   report [path...]     build one report across modules
+  hunt --source <type> <files...>  look for LLMjacking in exported logs
+  hunt export-sigma    write Sigma rules for the detections
   exposure [path...]   locate exposed credentials and plan their rotation
   exposure verify      check that old credentials no longer authenticate
   rules list           list the rule catalogue
@@ -65,6 +67,8 @@ func dispatch(args []string, stdin io.Reader, stdout io.Writer) error {
 		return runReport(rest, stdout)
 	case "posture":
 		return runPosture(rest, stdout)
+	case "hunt":
+		return runHunt(rest, stdout)
 	case "exposure":
 		return runExposure(rest, stdin, stdout)
 	case "rules":
