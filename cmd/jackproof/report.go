@@ -3,8 +3,6 @@ package main
 import (
 	"flag"
 	"io"
-
-	"github.com/ryankshah/jackproof/internal/finding"
 )
 
 func runReport(args []string, stdout io.Writer) error {
@@ -20,21 +18,11 @@ func runReport(args []string, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
-	result, err := runScanner(kit, paths)
+	result, err := analyzeAll(kit, paths)
 	if err != nil {
 		return err
 	}
-	postureFindings, postureCoverage, err := posturePass(kit, result)
-	if err != nil {
-		return err
-	}
-	postureCoverage.FilesScanned = nil
-	coverage := result.Coverage
-	coverage.Merge(postureCoverage)
-
-	findings := append(append([]finding.Finding(nil), result.Findings...), postureFindings...)
-	finding.Sort(findings)
-	rep := reportFor("jackproof report", findings, coverage)
-	rep.Graph = result.Graph
+	rep := reportFor("jackproof report", result.findings, result.coverage)
+	rep.Graph = result.graph
 	return emit(stdout, flags, kit, rep)
 }
