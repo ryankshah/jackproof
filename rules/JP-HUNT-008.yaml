@@ -1,0 +1,9 @@
+id: JP-HUNT-008
+title: Many concurrent streaming requests with uniform parameters
+severity: high
+verified: false
+matcher: streaming-burst
+description: A principal sent a large number of streaming model requests in a short window, and nearly all used the same model and client. Reseller gateways relay many users through one credential and produce this pattern.
+remediation: Rotate the credential, then set a rate limit or quota that matches the real workload. Review who holds the credential.
+refs:
+  - https://docs.aws.amazon.com/bedrock/latest/userguide/logging-using-cloudtrail.html

@@ -1,0 +1,10 @@
+id: JP-HUNT-004
+title: Model calls from many or unfamiliar source networks
+severity: high
+verified: false
+matcher: source-network
+description: A principal called models from many distinct addresses in a short time, from a network it never used before, or from a hosting provider when its history shows only corporate egress. Proxy gateways that resell stolen access spread calls across many addresses.
+remediation: Compare the addresses with your egress ranges. Rotate the credential if they are not yours, and restrict it to known networks where the platform allows source conditions.
+refs:
+  - https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html
+  - https://cloud.google.com/vertex-ai/docs/general/audit-logging

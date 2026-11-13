@@ -1,0 +1,10 @@
+id: JP-HUNT-002
+title: Invocation volume or cost far above the principal baseline
+severity: medium
+verified: false
+matcher: volume-spike
+description: A principal invoked models many times more often than its own rolling median, or spent many times more than usual in one period. Stolen access is often resold, so volume rises sharply once a proxy starts using it.
+remediation: Check whether the workload that owns this principal changed. If not, rotate the credential, review the callers, and set a quota or budget that would have stopped the spike.
+refs:
+  - https://docs.aws.amazon.com/bedrock/latest/userguide/logging-using-cloudtrail.html
+  - https://cloud.google.com/vertex-ai/docs/general/audit-logging

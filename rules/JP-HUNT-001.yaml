@@ -1,0 +1,11 @@
+id: JP-HUNT-001
+title: Model service enabled and then invoked by the same principal
+severity: high
+verified: false
+matcher: enable-then-invoke
+description: A principal enabled a model service or requested model access, and the same principal invoked a model shortly afterwards. This is the usual first step of LLMjacking in an account that never used models. The attacker switches the service on, then runs it at the owner's expense.
+remediation: Confirm with the principal's owner that the enablement was planned. If it was not, disable the credential, remove the model access, and review every action the principal took in the window.
+refs:
+  - https://docs.aws.amazon.com/bedrock/latest/userguide/logging-using-cloudtrail.html
+  - https://cloud.google.com/vertex-ai/docs/general/audit-logging
+  - https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log

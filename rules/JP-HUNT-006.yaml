@@ -1,0 +1,10 @@
+id: JP-HUNT-006
+title: Reconnaissance before first model use, or logging configuration read then deleted
+severity: medium
+verified: false
+matcher: reconnaissance
+description: A principal listed models or checked availability and quotas shortly before its first invocation, or read the invocation logging configuration and then deleted it. Both patterns appear when an attacker maps what a stolen identity can do and then removes the evidence.
+remediation: Review everything the principal did in the window. Restore the logging configuration, and confirm that the principal's owner made the changes.
+refs:
+  - https://docs.aws.amazon.com/bedrock/latest/userguide/model-invocation-logging.html
+  - https://docs.aws.amazon.com/bedrock/latest/userguide/logging-using-cloudtrail.html

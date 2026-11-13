@@ -1,0 +1,317 @@
+title: Bedrock model access enabled
+name: jackproof_bedrock_model_enablement
+id: {{uuid "jackproof_bedrock_model_enablement"}}
+status: experimental
+description: A principal requested access to a Bedrock foundation model. Field and event names follow the CloudTrail documentation and have not been checked against a live tenant.
+author: jackproof
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    eventSource: bedrock.amazonaws.com
+    eventName:
+      - PutFoundationModelEntitlement
+      - CreateFoundationModelAgreement
+  condition: selection
+level: medium
+tags:
+  - attack.impact
+  - attack.t1496
+falsepositives:
+  - Planned enablement of a model in an account that is meant to use models
+---
+title: Bedrock model invocation
+name: jackproof_bedrock_invocation
+id: {{uuid "jackproof_bedrock_invocation"}}
+status: experimental
+description: A principal invoked a Bedrock model. This rule is a building block for the correlation rules and is not meant to alert on its own.
+author: jackproof
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    eventSource: bedrock.amazonaws.com
+    eventName:
+      - InvokeModel
+      - InvokeModelWithResponseStream
+      - Converse
+      - ConverseStream
+  condition: selection
+level: informational
+---
+title: Bedrock streaming model invocation
+name: jackproof_bedrock_streaming_invocation
+id: {{uuid "jackproof_bedrock_streaming_invocation"}}
+status: experimental
+description: A principal invoked a Bedrock model with a streaming response. This rule is a building block for the streaming burst correlation.
+author: jackproof
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    eventSource: bedrock.amazonaws.com
+    eventName:
+      - InvokeModelWithResponseStream
+      - ConverseStream
+  condition: selection
+level: informational
+---
+title: Bedrock model listing or availability check
+name: jackproof_bedrock_model_listing
+id: {{uuid "jackproof_bedrock_model_listing"}}
+status: experimental
+description: A principal listed Bedrock models or checked availability. This rule is a building block for the reconnaissance correlation.
+author: jackproof
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    eventSource: bedrock.amazonaws.com
+    eventName:
+      - ListFoundationModels
+      - GetFoundationModel
+      - ListInferenceProfiles
+  condition: selection
+level: informational
+---
+title: Bedrock invocation logging configuration read
+name: jackproof_bedrock_logging_read
+id: {{uuid "jackproof_bedrock_logging_read"}}
+status: experimental
+description: A principal read the Bedrock model invocation logging configuration. This rule is a building block for the logging removal correlation.
+author: jackproof
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    eventSource: bedrock.amazonaws.com
+    eventName: GetModelInvocationLoggingConfiguration
+  condition: selection
+level: informational
+---
+title: Bedrock invocation logging configuration deleted
+name: jackproof_bedrock_logging_deleted
+id: {{uuid "jackproof_bedrock_logging_deleted"}}
+status: experimental
+description: A principal deleted the Bedrock model invocation logging configuration. Deleting it removes the record of what models were called.
+author: jackproof
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    eventSource: bedrock.amazonaws.com
+    eventName: DeleteModelInvocationLoggingConfiguration
+  condition: selection
+level: high
+tags:
+  - attack.defense_evasion
+  - attack.t1562
+falsepositives:
+  - A planned change of the logging destination
+---
+title: IAM access key created
+name: jackproof_access_key_created
+id: {{uuid "jackproof_access_key_created"}}
+status: experimental
+description: A principal created an IAM access key. This rule is a building block for the key created and used correlation.
+author: jackproof
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    eventSource: iam.amazonaws.com
+    eventName: CreateAccessKey
+  condition: selection
+level: informational
+---
+title: Request signed with an access key
+name: jackproof_access_key_used
+id: {{uuid "jackproof_access_key_used"}}
+status: experimental
+description: Any AWS API request signed with an access key. This rule is a building block for the key created and used correlation.
+author: jackproof
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    eventSource|endswith: .amazonaws.com
+  filter:
+    userIdentity.accessKeyId: null
+  condition: selection and not filter
+level: informational
+---
+title: Vertex AI or Gemini API enabled in a project
+name: jackproof_gcp_model_service_enabled
+id: {{uuid "jackproof_gcp_model_service_enabled"}}
+status: experimental
+description: A principal enabled the Vertex AI or Gemini API service in a project. Field and method names follow the Cloud Audit Logs documentation and have not been checked against a live project.
+author: jackproof
+logsource:
+  product: gcp
+  service: gcp.audit
+detection:
+  selection:
+    protoPayload.serviceName: serviceusage.googleapis.com
+    protoPayload.methodName|endswith:
+      - EnableService
+      - BatchEnableServices
+    protoPayload.resourceName|contains:
+      - aiplatform.googleapis.com
+      - generativelanguage.googleapis.com
+  condition: selection
+level: medium
+tags:
+  - attack.impact
+  - attack.t1496
+falsepositives:
+  - Planned enablement of a model service in a project that is meant to use models
+---
+title: Azure OpenAI account or deployment written
+name: jackproof_azure_openai_written
+id: {{uuid "jackproof_azure_openai_written"}}
+status: experimental
+description: A principal created or changed an Azure OpenAI account or deployment. Field and operation names follow the Activity Log documentation and have not been checked against a live subscription.
+author: jackproof
+logsource:
+  product: azure
+  service: activitylogs
+detection:
+  selection:
+    operationName:
+      - MICROSOFT.COGNITIVESERVICES/ACCOUNTS/WRITE
+      - MICROSOFT.COGNITIVESERVICES/ACCOUNTS/DEPLOYMENTS/WRITE
+  condition: selection
+level: medium
+tags:
+  - attack.impact
+  - attack.t1496
+falsepositives:
+  - Planned creation of an Azure OpenAI account
+---
+title: Bedrock model enabled and then invoked by the same principal
+name: jackproof_bedrock_enable_then_invoke
+id: {{uuid "jackproof_bedrock_enable_then_invoke"}}
+status: experimental
+description: Corresponds to JP-HUNT-001.
+author: jackproof
+correlation:
+  type: temporal_ordered
+  rules:
+    - jackproof_bedrock_model_enablement
+    - jackproof_bedrock_invocation
+  group-by:
+    - userIdentity.arn
+  timespan: {{.EnableThenInvokeWindow}}
+level: high
+---
+title: Bedrock invocation volume above a fixed floor
+name: jackproof_bedrock_volume
+id: {{uuid "jackproof_bedrock_volume"}}
+status: experimental
+description: Corresponds to JP-HUNT-002. Sigma cannot express a rolling median baseline, so this rule uses the fixed request floor from min_requests. Use the jackproof hunt command for the baseline comparison.
+author: jackproof
+correlation:
+  type: event_count
+  rules:
+    - jackproof_bedrock_invocation
+  group-by:
+    - userIdentity.arn
+  timespan: {{.VolumePeriod}}
+  condition:
+    gte: {{.MinRequests}}
+level: medium
+---
+title: Bedrock invocations from many source addresses
+name: jackproof_bedrock_many_source_addresses
+id: {{uuid "jackproof_bedrock_many_source_addresses"}}
+status: experimental
+description: Corresponds to the many addresses check of JP-HUNT-004.
+author: jackproof
+correlation:
+  type: value_count
+  rules:
+    - jackproof_bedrock_invocation
+  group-by:
+    - userIdentity.arn
+  timespan: {{.DistinctIPWindow}}
+  condition:
+    gte: {{.DistinctIPs}}
+    field: sourceIPAddress
+level: high
+---
+title: Access key created and then used
+name: jackproof_access_key_created_then_used
+id: {{uuid "jackproof_access_key_created_then_used"}}
+status: experimental
+description: Corresponds to JP-HUNT-005. The correlation joins the created key with the key that signs later requests. Comparing the source address of the two events is left to the analyst.
+author: jackproof
+correlation:
+  type: temporal_ordered
+  rules:
+    - jackproof_access_key_created
+    - jackproof_access_key_used
+  group-by:
+    - access_key
+  aliases:
+    access_key:
+      jackproof_access_key_created: responseElements.accessKey.accessKeyId
+      jackproof_access_key_used: userIdentity.accessKeyId
+  timespan: {{.KeyUseWindow}}
+level: high
+---
+title: Bedrock model listing followed by invocation
+name: jackproof_bedrock_recon_then_invoke
+id: {{uuid "jackproof_bedrock_recon_then_invoke"}}
+status: experimental
+description: Corresponds to the listing check of JP-HUNT-006. Whether the invocation is the principal's first is left to the analyst.
+author: jackproof
+correlation:
+  type: temporal_ordered
+  rules:
+    - jackproof_bedrock_model_listing
+    - jackproof_bedrock_invocation
+  group-by:
+    - userIdentity.arn
+  timespan: {{.ReconWindow}}
+level: medium
+---
+title: Bedrock invocation logging configuration read and then deleted
+name: jackproof_bedrock_logging_read_then_deleted
+id: {{uuid "jackproof_bedrock_logging_read_then_deleted"}}
+status: experimental
+description: Corresponds to the logging removal check of JP-HUNT-006.
+author: jackproof
+correlation:
+  type: temporal_ordered
+  rules:
+    - jackproof_bedrock_logging_read
+    - jackproof_bedrock_logging_deleted
+  group-by:
+    - userIdentity.arn
+  timespan: {{.ReconWindow}}
+level: high
+---
+title: Burst of Bedrock streaming invocations
+name: jackproof_bedrock_streaming_burst
+id: {{uuid "jackproof_bedrock_streaming_burst"}}
+status: experimental
+description: Corresponds to JP-HUNT-008. Sigma cannot test that the requests use uniform parameters, so this rule counts streaming requests only.
+author: jackproof
+correlation:
+  type: event_count
+  rules:
+    - jackproof_bedrock_streaming_invocation
+  group-by:
+    - userIdentity.arn
+  timespan: {{.StreamWindow}}
+  condition:
+    gte: {{.StreamConcurrency}}
+level: high

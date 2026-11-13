@@ -1,0 +1,10 @@
+id: JP-HUNT-005
+title: Access key created and used from a new source within minutes
+severity: high
+verified: false
+matcher: key-created-then-used
+description: An access key or service account key was created, and the new key was used from a different address within a short window. A key that is created and immediately used elsewhere has usually been taken by someone other than the creator.
+remediation: Delete the key, then review the principal that created it. Treat the principal as compromised until the creation is explained.
+refs:
+  - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
+  - https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys

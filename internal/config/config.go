@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -27,6 +28,7 @@ type Config struct {
 	Environments      map[string][]string `yaml:"environments"`
 	ExpectedProviders map[string][]string `yaml:"expected_providers"`
 	OwnedAccounts     []string            `yaml:"owned_accounts"`
+	Hunt              Hunt                `yaml:"hunt"`
 
 	ignoreMatchers []*regexp.Regexp
 	envMatchers    []environmentMatcher
@@ -164,4 +166,94 @@ func (c *Config) OwnsAccount(id string) bool {
 		}
 	}
 	return false
+}
+
+type Hunt struct {
+	EnableThenInvokeWindow time.Duration `yaml:"enable_then_invoke_window"`
+	VolumeMultiplier       float64       `yaml:"volume_multiplier"`
+	VolumePeriod           time.Duration `yaml:"volume_period"`
+	BaselinePeriods        int           `yaml:"baseline_periods"`
+	BaselineMinPeriods     int           `yaml:"baseline_min_periods"`
+	MinRequests            int           `yaml:"min_requests"`
+	MinHistory             int           `yaml:"min_history"`
+	HighCostModels         []string      `yaml:"high_cost_models"`
+	DistinctIPs            int           `yaml:"distinct_ips"`
+	DistinctIPWindow       time.Duration `yaml:"distinct_ip_window"`
+	KeyUseWindow           time.Duration `yaml:"key_use_window"`
+	ReconWindow            time.Duration `yaml:"recon_window"`
+	StreamConcurrency      int           `yaml:"stream_concurrency"`
+	StreamWindow           time.Duration `yaml:"stream_window"`
+	UniformShare           float64       `yaml:"uniform_share"`
+	KnownNetworks          []string      `yaml:"known_networks"`
+}
+
+func DefaultHunt() Hunt {
+	return Hunt{
+		EnableThenInvokeWindow: time.Hour,
+		VolumeMultiplier:       5,
+		VolumePeriod:           time.Hour,
+		BaselinePeriods:        24,
+		BaselineMinPeriods:     3,
+		MinRequests:            20,
+		MinHistory:             20,
+		HighCostModels:         []string{"*opus*", "*gpt-4*", "*o1*", "*ultra*"},
+		DistinctIPs:            5,
+		DistinctIPWindow:       10 * time.Minute,
+		KeyUseWindow:           10 * time.Minute,
+		ReconWindow:            30 * time.Minute,
+		StreamConcurrency:      20,
+		StreamWindow:           time.Minute,
+		UniformShare:           0.9,
+	}
+}
+
+func (c *Config) HuntSettings() Hunt {
+	defaults := DefaultHunt()
+	settings := c.Hunt
+	if settings.EnableThenInvokeWindow == 0 {
+		settings.EnableThenInvokeWindow = defaults.EnableThenInvokeWindow
+	}
+	if settings.VolumeMultiplier == 0 {
+		settings.VolumeMultiplier = defaults.VolumeMultiplier
+	}
+	if settings.VolumePeriod == 0 {
+		settings.VolumePeriod = defaults.VolumePeriod
+	}
+	if settings.BaselinePeriods == 0 {
+		settings.BaselinePeriods = defaults.BaselinePeriods
+	}
+	if settings.BaselineMinPeriods == 0 {
+		settings.BaselineMinPeriods = defaults.BaselineMinPeriods
+	}
+	if settings.MinRequests == 0 {
+		settings.MinRequests = defaults.MinRequests
+	}
+	if settings.MinHistory == 0 {
+		settings.MinHistory = defaults.MinHistory
+	}
+	if len(settings.HighCostModels) == 0 {
+		settings.HighCostModels = defaults.HighCostModels
+	}
+	if settings.DistinctIPs == 0 {
+		settings.DistinctIPs = defaults.DistinctIPs
+	}
+	if settings.DistinctIPWindow == 0 {
+		settings.DistinctIPWindow = defaults.DistinctIPWindow
+	}
+	if settings.KeyUseWindow == 0 {
+		settings.KeyUseWindow = defaults.KeyUseWindow
+	}
+	if settings.ReconWindow == 0 {
+		settings.ReconWindow = defaults.ReconWindow
+	}
+	if settings.StreamConcurrency == 0 {
+		settings.StreamConcurrency = defaults.StreamConcurrency
+	}
+	if settings.StreamWindow == 0 {
+		settings.StreamWindow = defaults.StreamWindow
+	}
+	if settings.UniformShare == 0 {
+		settings.UniformShare = defaults.UniformShare
+	}
+	return settings
 }

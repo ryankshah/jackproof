@@ -1,0 +1,9 @@
+id: JP-HUNT-007
+title: Model invocation by a principal outside the mapped environments
+severity: medium
+verified: false
+matcher: unmapped-principal
+description: A principal invoked models from an account that jackproof.yaml does not list as owned, or invoked a provider that no scanned code uses. Legitimate workloads appear in the code and the account list. An invocation with no matching code or account is unexplained.
+remediation: Identify the owner of the principal. If no workload accounts for it, disable the credential. If a workload does, add its account to owned_accounts or scan the repository that contains it.
+refs:
+  - https://docs.aws.amazon.com/bedrock/latest/userguide/logging-using-cloudtrail.html

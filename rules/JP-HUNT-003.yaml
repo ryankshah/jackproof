@@ -1,0 +1,10 @@
+id: JP-HUNT-003
+title: Principal or account invoked a model it has not used before
+severity: medium
+verified: false
+matcher: first-seen-model
+description: A principal that had a history of invocations called a model that neither it nor its account had called before. Attackers favour the most capable and most expensive models, so a new high-cost model is a sign of misuse.
+remediation: Confirm with the owner that the model change was planned. If it was not, review the principal's other activity, and restrict the principal to the models its workload needs.
+refs:
+  - https://docs.aws.amazon.com/bedrock/latest/userguide/logging-using-cloudtrail.html
+  - https://cloud.google.com/vertex-ai/docs/general/audit-logging
