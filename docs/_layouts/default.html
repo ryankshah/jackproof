@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% if page.url == '/' %}jackproof docs ~ Dr. Ryan Shah{% else %}{{ page.title }} ~ jackproof docs{% endif %}</title>
+<meta name="description" content="{{ site.description }}">
+<meta name="theme-color" content="#14171a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%2314171a%27/%3E%3Cpath d=%27M9 24V8h8a5 5 0 0 1 0 10h-8m8 0 6 6%27 fill=%27none%27 stroke=%27%23f7b733%27 stroke-width=%273%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
+<link rel="preload" href="/assets/fonts/host-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/atkinson-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/fonts/fonts.css">
+<link rel="stylesheet" href="/assets/tokens.css">
+<link rel="stylesheet" href="/assets/base.css">
+<link rel="stylesheet" href="/assets/styles.css">
+<link rel="stylesheet" href="{{ '/assets/docs.css' | relative_url }}">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="dochead">
+    <a class="dochead__name" href="https://ryankshah.com/" aria-label="Ryan Shah, home">Ryan Shah</a>
+    <ul class="dochead__links">
+        <li><a href="https://ryankshah.com/projects.html">Projects</a></li>
+        <li><a href="https://ryankshah.com/writing.html">Writing</a></li>
+        <li><a href="{{ '/' | relative_url }}" aria-current="page">jackproof docs</a></li>
+    </ul>
+    <a class="btn btn--primary dochead__action" href="https://github.com/ryankshah/jackproof" rel="noopener">GitHub</a>
+</header>
+
+<div class="container docs">
+    <nav class="docs__nav" aria-label="Documentation">
+        <p class="docs__title"><a href="{{ '/' | relative_url }}">jackproof</a></p>
+        <ul>
+            <li><a href="{{ '/cli.html' | relative_url }}"{% if page.url == '/cli.html' %} aria-current="page"{% endif %}>Command line, CI and hooks</a></li>
+            <li><a href="{{ '/configuration.html' | relative_url }}"{% if page.url == '/configuration.html' %} aria-current="page"{% endif %}>Configuration</a></li>
+            <li><a href="{{ '/evidence-model.html' | relative_url }}"{% if page.url == '/evidence-model.html' %} aria-current="page"{% endif %}>Evidence model</a></li>
+            <li><a href="{{ '/threat-model.html' | relative_url }}"{% if page.url == '/threat-model.html' %} aria-current="page"{% endif %}>Threat model</a></li>
+            <li><a href="{{ '/rules.html' | relative_url }}"{% if page.url == '/rules.html' %} aria-current="page"{% endif %}>Rules</a></li>
+            <li><a href="{{ '/unverified.html' | relative_url }}"{% if page.url == '/unverified.html' %} aria-current="page"{% endif %}>Unverified facts</a></li>
+            <li><a href="{{ '/verification.html' | relative_url }}"{% if page.url == '/verification.html' %} aria-current="page"{% endif %}>Verification record</a></li>
+            <li><a href="{{ '/dependencies.html' | relative_url }}"{% if page.url == '/dependencies.html' %} aria-current="page"{% endif %}>Dependencies</a></li>
+        </ul>
+        <ul class="docs__more">
+            <li><a href="https://github.com/ryankshah/jackproof/releases" rel="noopener">Releases</a></li>
+            <li><a href="https://github.com/ryankshah/jackproof/blob/main/CHANGELOG.md" rel="noopener">Changelog</a></li>
+            <li><a href="https://github.com/ryankshah/jackproof/security/policy" rel="noopener">Security policy</a></li>
+        </ul>
+    </nav>
+    <main class="prose" id="main">
+{{ content }}
+    </main>
+</div>
+
+<footer class="docfoot">
+    <div class="container">
+        <p class="foot__legal"><span>© 2026 Dr Ryan K. Shah</span><a href="https://ryankshah.com/">ryankshah.com</a></p>
+    </div>
+</footer>
+</body>
+</html>
