@@ -2,6 +2,12 @@
 
 This project follows semantic versioning. Entries list what changed for people who run the tool.
 
+## 1.0.1 - 2026-11-14
+
+### Changed
+
+- The GitHub Action display name is now `jackproof LLMjacking scan`, so that it can be listed on the GitHub Marketplace. Workflows that use `ryankshah/jackproof` are not affected.
+
 ## 1.0.0 - 2026-11-14
 
 First release.

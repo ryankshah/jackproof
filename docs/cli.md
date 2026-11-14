@@ -44,7 +44,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: ryankshah/jackproof@v1.0.0
+      - uses: ryankshah/jackproof@v1.0.1
         with:
           strict: "true"
           fail-on: high
@@ -57,7 +57,7 @@ The action installs jackproof, runs `jackproof diff` between the pull request ba
 ```yaml
 repos:
   - repo: https://github.com/ryankshah/jackproof
-    rev: v1.0.0
+    rev: v1.0.1
     hooks:
       - id: jackproof-scan
 ```
