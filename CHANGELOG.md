@@ -26,7 +26,7 @@ First release.
 
 ### Known limits
 
-- Provider key formats, GCP and Azure role tables, live-check endpoints and log event names are marked `verified: false` until confirmed in official documentation. `docs/unverified.md` lists them.
+- Some provider key formats, role entries, live-check endpoints and log event names are marked `verified: false` until they are confirmed in official documentation. `docs/unverified.md` lists them, and `docs/verification.md` records what is confirmed and where.
 - `scan` and `posture` are static analysis. Terraform is evaluated on a best-effort basis, and module inputs and remote state are not resolved.
 - `posture --live` checks logging for one region, project or subscription at a time, and the Google Cloud check cannot see audit settings inherited from a folder or the organization.
 - The Azure Activity Log does not record model invocations.
