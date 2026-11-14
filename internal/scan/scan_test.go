@@ -1,8 +1,10 @@
 package scan
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -693,5 +695,45 @@ func TestFilesWithOnlyUnrelatedSecretLookupsCreateNoHolder(t *testing.T) {
 	result := runScan(t, "", map[string]string{"svc/app.py": "x = client.get_secret_value(SecretId=\"prod/database-password\")\n"})
 	if len(result.Graph.Holders()) != 0 || len(result.Graph.Credentials()) != 0 {
 		t.Errorf("holders %d, credentials %d", len(result.Graph.Holders()), len(result.Graph.Credentials()))
+	}
+}
+
+func TestConcurrentReadingKeepsResultsDeterministic(t *testing.T) {
+	files := map[string]string{"node_modules/x.js": "x\n", "blob.bin": "a\x00b"}
+	for i := 0; i < 120; i++ {
+		name := fmt.Sprintf("dir%02d/file%03d.env", i%7, i)
+		files[name] = "ANTHROPIC_API_KEY=" + anthropicKey + "\n"
+		files[fmt.Sprintf("dir%02d/note%03d.txt", i%7, i)] = "nothing\n"
+	}
+	root := writeTree(t, files)
+	scanner := newScanner(t, "")
+	first, err := scanner.Run([]string{root})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := len(findingsFor(first, "JP-KEY-001")); got != 120 {
+		t.Fatalf("findings = %d, want 120", got)
+	}
+	for run := 0; run < 3; run++ {
+		again, err := scanner.Run([]string{root})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(again.Findings) != len(first.Findings) {
+			t.Fatalf("run %d: %d findings, want %d", run, len(again.Findings), len(first.Findings))
+		}
+		for i := range first.Findings {
+			if again.Findings[i].ID != first.Findings[i].ID {
+				t.Fatalf("run %d: finding %d differs", run, i)
+			}
+		}
+		if !reflect.DeepEqual(again.Coverage.FilesSkipped, first.Coverage.FilesSkipped) || !reflect.DeepEqual(again.Coverage.FilesScanned, first.Coverage.FilesScanned) {
+			t.Fatalf("run %d: coverage differs", run)
+		}
+		for i := range first.Files {
+			if again.Files[i].Path != first.Files[i].Path {
+				t.Fatalf("run %d: file %d is %s, want %s", run, i, again.Files[i].Path, first.Files[i].Path)
+			}
+		}
 	}
 }

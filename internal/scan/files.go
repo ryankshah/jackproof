@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/ryankshah/jackproof/internal/config"
 	"github.com/ryankshah/jackproof/internal/finding"
@@ -21,6 +22,7 @@ import (
 const (
 	maxFileSize     = 1 << 20
 	binaryProbeSize = 8000
+	readWorkers     = 16
 
 	kindDotenv       = "dotenv"
 	kindDockerignore = "dockerignore"
@@ -99,8 +101,20 @@ func baseDirectory(root string) (string, error) {
 	return absolute, nil
 }
 
+type candidate struct {
+	absolute string
+	relative string
+	entry    fs.DirEntry
+}
+
+type readResult struct {
+	file *sourceFile
+	skip string
+	err  error
+}
+
 func collectFiles(roots []string, base string, cfg *config.Config, coverage *finding.Coverage) ([]*sourceFile, error) {
-	var files []*sourceFile
+	var candidates []candidate
 	for _, root := range roots {
 		absolute, err := filepath.Abs(root)
 		if err != nil {
@@ -118,22 +132,50 @@ func collectFiles(roots []string, base string, cfg *config.Config, coverage *fin
 			if entry.IsDir() {
 				return directoryDecision(entry.Name(), current, relative, current == absolute, cfg, coverage)
 			}
-			file, skipReason, readErr := readFile(current, relative, entry, cfg)
-			switch {
-			case readErr != nil:
-				return readErr
-			case skipReason != "":
-				coverage.AddSkipped(relative, skipReason)
-			default:
-				files = append(files, file)
-			}
+			candidates = append(candidates, candidate{absolute: current, relative: relative, entry: entry})
 			return nil
 		})
 		if walkErr != nil {
 			return nil, walkErr
 		}
 	}
+
+	results := readConcurrently(candidates, cfg)
+	var files []*sourceFile
+	for index, result := range results {
+		switch {
+		case result.err != nil:
+			return nil, result.err
+		case result.skip != "":
+			coverage.AddSkipped(candidates[index].relative, result.skip)
+		default:
+			files = append(files, result.file)
+		}
+	}
 	return files, nil
+}
+
+func readConcurrently(candidates []candidate, cfg *config.Config) []readResult {
+	results := make([]readResult, len(candidates))
+	indexes := make(chan int)
+	var workers sync.WaitGroup
+	for range readWorkers {
+		workers.Add(1)
+		go func() {
+			defer workers.Done()
+			for index := range indexes {
+				item := candidates[index]
+				file, skip, err := readFile(item.absolute, item.relative, item.entry, cfg)
+				results[index] = readResult{file: file, skip: skip, err: err}
+			}
+		}()
+	}
+	for index := range candidates {
+		indexes <- index
+	}
+	close(indexes)
+	workers.Wait()
+	return results
 }
 
 func directoryDecision(name, absolute, relative string, isRoot bool, cfg *config.Config, coverage *finding.Coverage) error {
