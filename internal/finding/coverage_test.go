@@ -41,3 +41,19 @@ func TestCoverageAddScanned(t *testing.T) {
 		t.Errorf("FilesScanned = %v", c.FilesScanned)
 	}
 }
+
+func TestSkippedListIsCappedButCountsStayExact(t *testing.T) {
+	var coverage Coverage
+	for i := 0; i < MaxSkippedListed+250; i++ {
+		coverage.AddSkipped("f", "binary file")
+	}
+	if len(coverage.FilesSkipped) != MaxSkippedListed || coverage.SkippedMore != 250 || coverage.TotalSkipped() != MaxSkippedListed+250 {
+		t.Errorf("listed %d, more %d, total %d", len(coverage.FilesSkipped), coverage.SkippedMore, coverage.TotalSkipped())
+	}
+	var merged Coverage
+	merged.Merge(coverage)
+	merged.Merge(coverage)
+	if merged.TotalSkipped() != 2*(MaxSkippedListed+250) || len(merged.FilesSkipped) != MaxSkippedListed {
+		t.Errorf("merged listed %d, total %d", len(merged.FilesSkipped), merged.TotalSkipped())
+	}
+}

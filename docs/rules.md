@@ -233,7 +233,7 @@ Literal LLM provider key found in repository
 - Verified against provider documentation: no
 - Matcher: `provider-key-literal`
 
-A string in a tracked file matches the key format of an LLM provider or a cloud credential that can reach model services. Anyone with read access to the repository, its forks or its history can use the key.
+A string in a file of the scanned tree matches the key format of an LLM provider or a cloud credential that can reach model services. Where git tracks the file, anyone with read access to the repository, its forks or its history can use the key. Where git ignores the file, the key is on this machine only, and the finding is low severity.
 
 Fix: Revoke the key at the provider, create a replacement, store it in a secret manager and inject it at runtime. Removing the line from the file does not remove it from git history.
 

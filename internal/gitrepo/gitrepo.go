@@ -100,3 +100,33 @@ func StageSnapshot(repository string, files []string) (string, func() error, err
 	}
 	return directory, cleanup, nil
 }
+
+type FileState int
+
+const (
+	Tracked FileState = iota + 1
+	Untracked
+)
+
+func FileStates(directory string) (map[string]FileState, bool) {
+	tracked, err := run(directory, "ls-files", "-z")
+	if err != nil {
+		return nil, false
+	}
+	untracked, err := run(directory, "ls-files", "-z", "--others", "--exclude-standard")
+	if err != nil {
+		return nil, false
+	}
+	states := make(map[string]FileState)
+	for _, name := range strings.Split(untracked, "\x00") {
+		if name != "" {
+			states[name] = Untracked
+		}
+	}
+	for _, name := range strings.Split(tracked, "\x00") {
+		if name != "" {
+			states[name] = Tracked
+		}
+	}
+	return states, true
+}

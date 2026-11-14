@@ -116,14 +116,17 @@ func (r *run) sharedSinks() {
 			reported[pair] = true
 			sink := holder.Sinks[0]
 			unproven := "Whether the reporter captures environment variables."
+			severity := finding.SeverityLow
 			if sink.Kind == graph.SinkEnvDump {
 				unproven = "Whether log masking prevents the value from appearing in the output."
+				severity = ""
 			}
 			r.emit(findingSpec{
 				rule:       ruleSharedSink,
 				title:      fmt.Sprintf("%s is in the environment of %s, which has %s", r.describe(credential), holder.Name, describeSink(sink)),
 				method:     finding.MethodIaCParse,
 				confidence: finding.ConfidenceMedium,
+				severity:   severity,
 				flags:      []finding.Flag{finding.FlagInferred},
 				unproven:   []string{unproven},
 				evidence: []finding.Evidence{

@@ -579,3 +579,72 @@ func TestTerraformWorkloads(t *testing.T) {
 		t.Errorf("expected untrusted and shared sink findings, got %d findings", len(result.Findings))
 	}
 }
+
+func TestBuildOutputAndBinaryFilesAreSkippedWithoutBeingRead(t *testing.T) {
+	secretLine := "ANTHROPIC_API_KEY=" + anthropicKey + "\n"
+	files := map[string]string{
+		"gradleapp/build.gradle":            "plugins {}\n",
+		"gradleapp/build/generated.txt":     secretLine,
+		"gradleapp/.gradle/cache.txt":       secretLine,
+		"plain/build/notes.txt":             secretLine,
+		"rustapp/Cargo.toml":                "[package]\n",
+		"rustapp/target/debug/out.txt":      secretLine,
+		"assets/logo.png":                   secretLine,
+		"assets/world.mca":                  secretLine,
+		"assets/readme.txt":                 "no secrets\n",
+		"assets/late.bin":                   "text",
+		"assets/binary-with-text-extension": "header\x00" + secretLine,
+	}
+	result := runScan(t, "", files)
+	scanned := make(map[string]bool)
+	for _, f := range findingsFor(result, "JP-KEY-001") {
+		scanned[f.Evidence[0].Path] = true
+	}
+	if len(scanned) != 1 || !scanned["plain/build/notes.txt"] {
+		t.Errorf("only the build directory without a build tool marker may be scanned, got %v", scanned)
+	}
+	reasons := make(map[string]string)
+	for _, skip := range result.Coverage.FilesSkipped {
+		reasons[skip.Path] = skip.Reason
+	}
+	want := map[string]string{
+		"gradleapp/build/":                  "build output",
+		"gradleapp/.gradle/":                "build tool cache",
+		"rustapp/target/":                   "build output",
+		"assets/logo.png":                   "binary file",
+		"assets/world.mca":                  "binary file",
+		"assets/late.bin":                   "binary file",
+		"assets/binary-with-text-extension": "binary file",
+	}
+	for path, reason := range want {
+		if reasons[path] != reason {
+			t.Errorf("skip reason for %s = %q, want %q", path, reasons[path], reason)
+		}
+	}
+}
+
+func TestLargeFilesAreStillReadInFull(t *testing.T) {
+	padding := strings.Repeat("filler line without secrets\n", 2000)
+	result := runScan(t, "", map[string]string{"big.txt": padding + "ANTHROPIC_API_KEY=" + anthropicKey + "\n"})
+	found := findingsFor(result, "JP-KEY-001")
+	if len(found) != 1 || found[0].Evidence[0].StartLine != 2001 {
+		t.Errorf("findings = %+v", found)
+	}
+}
+
+func TestSharedSinkSeverityDependsOnTheSink(t *testing.T) {
+	result := runScan(t, "", map[string]string{
+		"compose.yaml":             "services:\n  api:\n    environment:\n      OPENAI_API_KEY: ${OPENAI_API_KEY}\n      SENTRY_DSN: https://example.invalid/1\n",
+		".github/workflows/ci.yml": "on: push\njobs:\n  j:\n    runs-on: x\n    env:\n      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}\n    steps:\n      - run: printenv\n",
+	})
+	severity := make(map[string]finding.Severity)
+	for _, f := range findingsFor(result, "JP-KEY-021") {
+		severity[f.Evidence[0].Path] = f.Severity
+	}
+	if severity["compose.yaml"] != finding.SeverityLow {
+		t.Errorf("telemetry sink severity = %s, want low", severity["compose.yaml"])
+	}
+	if severity[".github/workflows/ci.yml"] != finding.SeverityMedium {
+		t.Errorf("environment dump severity = %s, want medium", severity[".github/workflows/ci.yml"])
+	}
+}

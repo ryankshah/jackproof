@@ -48,13 +48,14 @@ type htmlPage struct {
 }
 
 type htmlCoverage struct {
-	Scanned     string
-	Skipped     []finding.Skip
-	SkippedMore int
-	LogSources  []string
-	Ranges      []string
-	Rules       []string
-	Detail      string
+	Scanned      string
+	Skipped      []finding.Skip
+	SkippedMore  int
+	SkippedTotal int
+	LogSources   []string
+	Ranges       []string
+	Rules        []string
+	Detail       string
 }
 
 func WriteHTML(w io.Writer, r Report) error {
@@ -103,9 +104,10 @@ func (r Report) htmlCoverage() htmlCoverage {
 	if len(c.FilesScanned) > 0 {
 		coverage.Scanned = fmt.Sprintf("%d (%s)", c.TotalScanned(), kindSummary(c))
 	}
+	coverage.SkippedTotal = c.TotalSkipped()
 	for index, skip := range c.FilesSkipped {
 		if index == maxListedSkips {
-			coverage.SkippedMore = len(c.FilesSkipped) - maxListedSkips
+			coverage.SkippedMore = c.TotalSkipped() - maxListedSkips
 			break
 		}
 		coverage.Skipped = append(coverage.Skipped, skip)

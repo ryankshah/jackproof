@@ -48,7 +48,7 @@ jackproof scan .
 ```
 jackproof scan: 1 finding: 1 high
 
-HIGH     JP-KEY-001  Anthropic key sk-a...xxxx committed in .env  [high confidence]
+HIGH     JP-KEY-001  Anthropic key sk-a...xxxx found in .env  [high confidence]
          .env:1
            ANTHROPIC_API_KEY=sk-a...xxxx
          flags: unverified-rule

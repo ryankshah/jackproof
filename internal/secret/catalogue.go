@@ -14,10 +14,11 @@ import (
 var embeddedProviders []byte
 
 type Format struct {
-	Name     string `yaml:"name"`
-	Pattern  string `yaml:"pattern"`
-	Context  bool   `yaml:"context"`
-	Verified bool   `yaml:"verified"`
+	Name     string   `yaml:"name"`
+	Pattern  string   `yaml:"pattern"`
+	Context  bool     `yaml:"context"`
+	Anchors  []string `yaml:"anchors"`
+	Verified bool     `yaml:"verified"`
 }
 
 type Provider struct {
@@ -35,6 +36,7 @@ type compiledFormat struct {
 	provider *Provider
 	format   Format
 	re       *regexp.Regexp
+	triggers []string
 }
 
 type nameToken struct {
@@ -94,7 +96,11 @@ func parseCatalogue(data []byte) (*Catalogue, error) {
 			if err != nil {
 				return nil, err
 			}
-			catalogue.compiled = append(catalogue.compiled, compiledFormat{provider: provider, format: format, re: re})
+			triggers, err := triggersFor(provider, format)
+			if err != nil {
+				return nil, err
+			}
+			catalogue.compiled = append(catalogue.compiled, compiledFormat{provider: provider, format: format, re: re, triggers: triggers})
 		}
 	}
 	return catalogue, nil
@@ -194,4 +200,22 @@ func (v *VerifySpec) validate() error {
 		return fmt.Errorf("verify auth %q must be bearer, header:NAME or query:NAME", v.Auth)
 	}
 	return nil
+}
+
+func triggersFor(provider *Provider, format Format) ([]string, error) {
+	if format.Context {
+		triggers := make([]string, len(provider.EnvVars))
+		for i, name := range provider.EnvVars {
+			triggers[i] = strings.ToLower(name)
+		}
+		return triggers, nil
+	}
+	prefix, _ := regexp.MustCompile(format.Pattern).LiteralPrefix()
+	if prefix != "" {
+		return []string{prefix}, nil
+	}
+	if len(format.Anchors) > 0 {
+		return format.Anchors, nil
+	}
+	return nil, fmt.Errorf("provider %q format %q has no literal prefix, so it needs anchors", provider.ID, format.Name)
 }

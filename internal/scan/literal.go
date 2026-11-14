@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/ryankshah/jackproof/internal/finding"
+	"github.com/ryankshah/jackproof/internal/gitrepo"
 	"github.com/ryankshah/jackproof/internal/graph"
 	"github.com/ryankshah/jackproof/internal/secret"
 )
@@ -67,11 +68,16 @@ func (r *run) recordLiteral(file *sourceFile, line int, match secret.Match, exam
 		}
 		unproven = append(unproven, "The file name suggests a placeholder value.")
 	}
+	where, severity, gitNote := r.gitContext(file.path)
+	if gitNote != "" {
+		unproven = append(unproven, gitNote)
+	}
 	r.emit(findingSpec{
 		rule:       ruleLiteralKey,
-		title:      r.providerName(match.Provider) + " key " + match.Redacted + " committed in " + file.path,
+		title:      r.providerName(match.Provider) + " key " + match.Redacted + " " + where,
 		method:     finding.MethodPattern,
 		confidence: confidence,
+		severity:   severity,
 		flags:      flags,
 		unproven:   unproven,
 		evidence:   []finding.Evidence{r.evidenceAt(file.path, line)},
@@ -110,4 +116,19 @@ func containsFlag(flags []finding.Flag, target finding.Flag) bool {
 		}
 	}
 	return false
+}
+
+func (r *run) gitContext(path string) (string, finding.Severity, string) {
+	if !r.gitKnown || strings.HasPrefix(path, "../") {
+		return "found in " + path, "", ""
+	}
+	switch r.gitState[path] {
+	case gitrepo.Tracked:
+		return "committed in " + path, "", ""
+	case gitrepo.Untracked:
+		return "present in " + path + ", which git does not track yet", "",
+			"The file is not committed yet, but adding the whole directory to git would include it."
+	}
+	return "present in " + path + ", which git ignores", finding.SeverityLow,
+		"The file is ignored by git, so the key is not in the repository history. Whether the key has left this machine through a backup, a Docker build context or a shared drive is not established."
 }

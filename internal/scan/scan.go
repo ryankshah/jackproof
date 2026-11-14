@@ -8,6 +8,7 @@ import (
 
 	"github.com/ryankshah/jackproof/internal/config"
 	"github.com/ryankshah/jackproof/internal/finding"
+	"github.com/ryankshah/jackproof/internal/gitrepo"
 	"github.com/ryankshah/jackproof/internal/graph"
 	"github.com/ryankshah/jackproof/internal/rules"
 	"github.com/ryankshah/jackproof/internal/scan/lang"
@@ -75,6 +76,8 @@ type run struct {
 	coverage finding.Coverage
 	byPath   map[string]*sourceFile
 	seen     map[string]struct{}
+	gitState map[string]gitrepo.FileState
+	gitKnown bool
 }
 
 func (s *Scanner) Run(roots []string) (*Result, error) {
@@ -91,6 +94,7 @@ func (s *Scanner) Run(roots []string) (*Result, error) {
 		byPath:  make(map[string]*sourceFile),
 		seen:    make(map[string]struct{}),
 	}
+	r.gitState, r.gitKnown = gitrepo.FileStates(base)
 	files, err := collectFiles(roots, base, s.cfg, &r.coverage)
 	if err != nil {
 		return nil, err
@@ -142,6 +146,7 @@ type findingSpec struct {
 	title      string
 	method     finding.Method
 	confidence finding.Confidence
+	severity   finding.Severity
 	flags      []finding.Flag
 	unproven   []string
 	evidence   []finding.Evidence
@@ -152,6 +157,9 @@ func (r *run) emit(spec findingSpec) {
 	f := rule.NewFinding(spec.method, spec.confidence, spec.evidence...)
 	if spec.title != "" {
 		f.Title = spec.title
+	}
+	if spec.severity != "" {
+		f.Severity = spec.severity
 	}
 	f.Flags = append(f.Flags, spec.flags...)
 	f.Unproven = spec.unproven

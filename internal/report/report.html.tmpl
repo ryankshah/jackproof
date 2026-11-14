@@ -103,7 +103,7 @@ a { color: inherit; }
 <h2>Coverage</h2>
 <ul>
 {{if .Coverage.Scanned}}<li>Files scanned: {{.Coverage.Scanned}}</li>{{end}}
-{{if .Coverage.Skipped}}<li>Files skipped: {{len .Coverage.Skipped}}{{if .Coverage.SkippedMore}} and {{.Coverage.SkippedMore}} more{{end}}<ul>{{range .Coverage.Skipped}}<li><code>{{.Path}}</code>: {{.Reason}}</li>{{end}}</ul></li>{{end}}
+{{if .Coverage.SkippedTotal}}<li>Files skipped: {{.Coverage.SkippedTotal}}<ul>{{range .Coverage.Skipped}}<li><code>{{.Path}}</code>: {{.Reason}}</li>{{end}}{{if .Coverage.SkippedMore}}<li>and {{.Coverage.SkippedMore}} more</li>{{end}}</ul></li>{{end}}
 {{range .Coverage.LogSources}}<li>Log source: {{.}}</li>{{end}}
 {{range .Coverage.Ranges}}<li>Time range for {{.}}</li>{{end}}
 {{if .Coverage.Rules}}<li>Rules not verified against provider documentation: {{range $index, $rule := .Coverage.Rules}}{{if $index}}, {{end}}{{$rule}}{{end}}</li>{{end}}

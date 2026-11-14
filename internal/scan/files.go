@@ -2,7 +2,9 @@ package scan
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path"
@@ -33,13 +35,34 @@ const (
 )
 
 var skippedDirectories = map[string]string{
-	".git":         "version control metadata",
-	"node_modules": "third-party dependencies",
-	"vendor":       "third-party dependencies",
-	".venv":        "third-party dependencies",
-	"venv":         "third-party dependencies",
-	"__pycache__":  "compiled bytecode",
-	".terraform":   "provider downloads",
+	".git":          "version control metadata",
+	"node_modules":  "third-party dependencies",
+	"vendor":        "third-party dependencies",
+	".venv":         "third-party dependencies",
+	"venv":          "third-party dependencies",
+	"__pycache__":   "compiled bytecode",
+	".terraform":    "provider downloads",
+	".gradle":       "build tool cache",
+	".next":         "build tool cache",
+	".nuxt":         "build tool cache",
+	".cache":        "build tool cache",
+	".tox":          "build tool cache",
+	".mypy_cache":   "build tool cache",
+	".pytest_cache": "build tool cache",
+}
+
+var buildOutputMarkers = map[string][]string{
+	"build":  {"build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts"},
+	"target": {"pom.xml", "Cargo.toml"},
+}
+
+var binaryExtensions = map[string]bool{
+	".class": true, ".jar": true, ".war": true, ".zip": true, ".gz": true, ".tgz": true, ".7z": true, ".rar": true, ".xz": true, ".bz2": true,
+	".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".bmp": true, ".ico": true, ".webp": true, ".psd": true,
+	".ogg": true, ".mp3": true, ".wav": true, ".mp4": true, ".mov": true, ".avi": true, ".flac": true,
+	".ttf": true, ".otf": true, ".woff": true, ".woff2": true, ".eot": true,
+	".pdf": true, ".exe": true, ".dll": true, ".so": true, ".dylib": true, ".bin": true, ".o": true, ".a": true, ".obj": true,
+	".nbt": true, ".dat": true, ".mca": true, ".pyc": true, ".wasm": true,
 }
 
 var composeName = regexp.MustCompile(`^(?:docker-)?compose(?:[.-].+)?\.ya?ml$`)
@@ -93,7 +116,7 @@ func collectFiles(roots []string, base string, cfg *config.Config, coverage *fin
 			}
 			relative = filepath.ToSlash(relative)
 			if entry.IsDir() {
-				return directoryDecision(entry.Name(), relative, current == absolute, cfg, coverage)
+				return directoryDecision(entry.Name(), current, relative, current == absolute, cfg, coverage)
 			}
 			file, skipReason, readErr := readFile(current, relative, entry, cfg)
 			switch {
@@ -113,12 +136,16 @@ func collectFiles(roots []string, base string, cfg *config.Config, coverage *fin
 	return files, nil
 }
 
-func directoryDecision(name, relative string, isRoot bool, cfg *config.Config, coverage *finding.Coverage) error {
+func directoryDecision(name, absolute, relative string, isRoot bool, cfg *config.Config, coverage *finding.Coverage) error {
 	if isRoot {
 		return nil
 	}
 	if reason, skip := skippedDirectories[name]; skip {
 		coverage.AddSkipped(relative+"/", reason)
+		return fs.SkipDir
+	}
+	if isBuildOutput(absolute, name) {
+		coverage.AddSkipped(relative+"/", "build output")
 		return fs.SkipDir
 	}
 	if cfg.IgnoresPath(relative + "/x") {
@@ -145,11 +172,14 @@ func readFile(absolute, relative string, entry fs.DirEntry, cfg *config.Config) 
 	if info.Size() > maxFileSize {
 		return nil, fmt.Sprintf("larger than %d bytes", maxFileSize), nil
 	}
-	data, err := os.ReadFile(absolute)
+	if binaryExtensions[strings.ToLower(path.Ext(relative))] {
+		return nil, "binary file", nil
+	}
+	data, binary, err := readText(absolute)
 	if err != nil {
 		return nil, "", fmt.Errorf("read %s: %w", relative, err)
 	}
-	if bytes.IndexByte(data[:min(len(data), binaryProbeSize)], 0) >= 0 {
+	if binary {
 		return nil, "binary file", nil
 	}
 	return &sourceFile{path: relative, kind: classify(relative, data), data: data}, "", nil
@@ -193,4 +223,35 @@ func isExampleFile(filePath string) bool {
 		}
 	}
 	return false
+}
+
+func isBuildOutput(absolute, name string) bool {
+	for _, marker := range buildOutputMarkers[name] {
+		if _, err := os.Stat(filepath.Join(filepath.Dir(absolute), marker)); err == nil {
+			return true
+		}
+	}
+	return false
+}
+
+func readText(absolute string) ([]byte, bool, error) {
+	file, err := os.Open(absolute)
+	if err != nil {
+		return nil, false, fmt.Errorf("open file: %w", err)
+	}
+	defer func() { _ = file.Close() }()
+	head := make([]byte, binaryProbeSize)
+	count, err := io.ReadFull(file, head)
+	if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+		return nil, false, fmt.Errorf("read file: %w", err)
+	}
+	head = head[:count]
+	if bytes.IndexByte(head, 0) >= 0 {
+		return nil, true, nil
+	}
+	rest, err := io.ReadAll(file)
+	if err != nil {
+		return nil, false, fmt.Errorf("read file: %w", err)
+	}
+	return append(head, rest...), false, nil
 }

@@ -1,6 +1,7 @@
 package secret
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
@@ -351,5 +352,57 @@ func TestDigestsAndNormalizeDigest(t *testing.T) {
 	}
 	if len(Algorithms()) != 3 {
 		t.Errorf("algorithms = %v", Algorithms())
+	}
+}
+
+func TestPrefilterDoesNotChangeResults(t *testing.T) {
+	catalogue := loadCatalogue(t)
+	var lines []string
+	for _, fixture := range positiveFixtures() {
+		lines = append(lines, fixture.line)
+	}
+	for _, fixture := range negativeFixtures() {
+		lines = append(lines, fixture.line)
+	}
+	base := append([]string(nil), lines...)
+	for _, line := range base {
+		lines = append(lines, strings.ToLower(line), strings.ToUpper(line), "  "+line+"  ", `{"k": "`+line+`"}`, line+" "+line)
+	}
+	lines = append(lines, "", "plain prose with no secrets", strings.Repeat("a", 5000))
+	found := 0
+	for _, line := range lines {
+		filtered, unfiltered := catalogue.detect(line, true), catalogue.detect(line, false)
+		if !reflect.DeepEqual(filtered, unfiltered) {
+			t.Errorf("results differ for %q:\nfiltered   %+v\nunfiltered %+v", line, filtered, unfiltered)
+		}
+		found += len(filtered)
+	}
+	if found == 0 {
+		t.Error("the corpus matched nothing, so the comparison proves nothing")
+	}
+}
+
+func TestEveryFormatHasATrigger(t *testing.T) {
+	catalogue := loadCatalogue(t)
+	for _, compiled := range catalogue.compiled {
+		if len(compiled.triggers) == 0 {
+			t.Errorf("%s/%s has no trigger", compiled.provider.ID, compiled.format.Name)
+		}
+		for _, trigger := range compiled.triggers {
+			if trigger == "" {
+				t.Errorf("%s/%s has an empty trigger", compiled.provider.ID, compiled.format.Name)
+			}
+		}
+	}
+}
+
+func TestFormatWithoutLiteralPrefixNeedsAnchors(t *testing.T) {
+	without := "- {id: a, name: A, reach: r, formats: [{name: k, pattern: '(?:A|B)[0-9]+'}]}\n"
+	with := "- {id: a, name: A, reach: r, formats: [{name: k, pattern: '(?:A|B)[0-9]+', anchors: [A, B]}]}\n"
+	if _, err := parseCatalogue([]byte(without)); err == nil {
+		t.Error("expected an error for a format with no literal prefix and no anchors")
+	}
+	if _, err := parseCatalogue([]byte(with)); err != nil {
+		t.Errorf("anchors should be accepted: %v", err)
 	}
 }

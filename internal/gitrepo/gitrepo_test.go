@@ -168,3 +168,36 @@ func TestStageSnapshotWithNoFiles(t *testing.T) {
 		t.Error("expected an error for a file that is not in the index")
 	}
 }
+
+func TestFileStates(t *testing.T) {
+	repository := newRepository(t)
+	write(t, repository, ".gitignore", "secret.env\n")
+	write(t, repository, "tracked.txt", "a")
+	write(t, repository, "sub/inner.txt", "b")
+	git(t, repository, "add", "-A")
+	git(t, repository, "commit", "-q", "-m", "first")
+	write(t, repository, "new.txt", "c")
+	write(t, repository, "secret.env", "d")
+
+	states, ok := FileStates(repository)
+	if !ok {
+		t.Fatal("expected a git repository")
+	}
+	want := map[string]FileState{"tracked.txt": Tracked, "sub/inner.txt": Tracked, ".gitignore": Tracked, "new.txt": Untracked}
+	for name, state := range want {
+		if states[name] != state {
+			t.Errorf("%s = %v, want %v", name, states[name], state)
+		}
+	}
+	if _, listed := states["secret.env"]; listed {
+		t.Error("an ignored file must not be listed")
+	}
+
+	inner, ok := FileStates(filepath.Join(repository, "sub"))
+	if !ok || inner["inner.txt"] != Tracked || len(inner) != 1 {
+		t.Errorf("subdirectory states = %v, %v", inner, ok)
+	}
+	if _, ok := FileStates(t.TempDir()); ok {
+		t.Error("a directory outside a repository must report ok = false")
+	}
+}

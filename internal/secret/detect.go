@@ -22,8 +22,26 @@ type Match struct {
 }
 
 func (c *Catalogue) Detect(line string) []Match {
+	return c.detect(line, true)
+}
+
+func (c *Catalogue) detect(line string, prefilter bool) []Match {
 	var matches []Match
+	var lowered string
+	hasLowered := false
 	for _, compiled := range c.compiled {
+		if prefilter {
+			haystack := line
+			if compiled.format.Context {
+				if !hasLowered {
+					lowered, hasLowered = strings.ToLower(line), true
+				}
+				haystack = lowered
+			}
+			if !containsAny(haystack, compiled.triggers) {
+				continue
+			}
+		}
 		for _, span := range compiled.re.FindAllStringSubmatchIndex(line, -1) {
 			start, end := span[2], span[3]
 			value := line[start:end]
@@ -95,6 +113,15 @@ func resolveOverlaps(matches []Match) []Match {
 func overlapsAny(candidate Match, others []Match) bool {
 	for _, other := range others {
 		if candidate.Start < other.End && other.Start < candidate.End {
+			return true
+		}
+	}
+	return false
+}
+
+func containsAny(text string, triggers []string) bool {
+	for _, trigger := range triggers {
+		if strings.Contains(text, trigger) {
 			return true
 		}
 	}
