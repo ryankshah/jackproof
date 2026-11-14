@@ -153,7 +153,7 @@ func TestTokenChecksHandleErrorsWithoutLeakingTheToken(t *testing.T) {
 	for _, tt := range tests {
 		for _, check := range []string{"gcp", "azure"} {
 			t.Run(check+" "+tt.name, func(t *testing.T) {
-				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(tt.status)
 					_, _ = io.WriteString(w, tt.body)
 				}))
