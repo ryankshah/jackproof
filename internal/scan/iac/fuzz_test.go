@@ -11,7 +11,7 @@ func FuzzParsers(f *testing.F) {
 	f.Add([]byte("A=1\nexport B=\"2\"\n# c\nC='3' # d\n"))
 	f.Add([]byte("a: &x {b: 1}\nc:\n  <<: *x\n  d: *x\n"))
 	f.Add([]byte("[[[[{{{{"))
-	f.Fuzz(func(t *testing.T, data []byte) {
+	f.Fuzz(func(_ *testing.T, data []byte) {
 		_, _ = ParseCompose("compose.yaml", data)
 		_, _ = ParseKubernetes("k8s.yaml", data)
 		_, _ = ParseActions("wf.yml", data)

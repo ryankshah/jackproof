@@ -8,7 +8,7 @@ func FuzzModule(f *testing.F) {
 	f.Add([]byte("resource \"r\" \"t\" {\n  p = jsonencode({a = [for x in [1,2] : x]})\n  q = file(\"../x\")\n  r = \"${aws_x.y[0].z}\"\n}\n"))
 	f.Add([]byte("resource \"a\" {"))
 	f.Add([]byte("x = <<EOT\nunterminated"))
-	f.Fuzz(func(t *testing.T, data []byte) {
+	f.Fuzz(func(_ *testing.T, data []byte) {
 		module := NewModule("fuzz")
 		if err := module.AddFile("fuzz/main.tf", data); err != nil {
 			return

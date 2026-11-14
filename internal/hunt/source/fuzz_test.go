@@ -34,7 +34,7 @@ func FuzzParseColumns(f *testing.F) {
 	f.Add("timestamp=ts,principal=key")
 	f.Add("")
 	f.Add("=,=,")
-	f.Fuzz(func(t *testing.T, spec string) {
+	f.Fuzz(func(_ *testing.T, spec string) {
 		_, _ = ParseColumns(spec)
 	})
 }
