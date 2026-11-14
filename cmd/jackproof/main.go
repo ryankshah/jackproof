@@ -5,9 +5,20 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
 )
 
 var version = "dev"
+
+func resolvedVersion() string {
+	if version != "dev" {
+		return version
+	}
+	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
+		return info.Main.Version
+	}
+	return version
+}
 
 const (
 	exitOK       = 0
@@ -80,7 +91,7 @@ func dispatch(args []string, stdin io.Reader, stdout io.Writer) error {
 	case "rules":
 		return runRules(rest, stdout)
 	case "version":
-		return writeLine(stdout, version)
+		return writeLine(stdout, resolvedVersion())
 	case "help", "-h", "--help":
 		return writeLine(stdout, usageText)
 	}

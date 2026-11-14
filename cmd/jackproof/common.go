@@ -140,7 +140,7 @@ func emit(stdout io.Writer, flags commonFlags, kit toolkit, rep report.Report) e
 		return err
 	}
 	rep.Findings = filter.Apply(rep.Findings)
-	rep.Version = version
+	rep.Version = resolvedVersion()
 	rep.Rules = kit.rules
 	rep.Providers = kit.providerNames()
 	if err := report.Write(stdout, flags.format, rep); err != nil {

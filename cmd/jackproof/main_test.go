@@ -620,3 +620,22 @@ func TestPostureLiveModeForGoogleAndAzureNeedsTokens(t *testing.T) {
 		t.Errorf("help lacks the new flags: %s", stdout)
 	}
 }
+
+func TestResolvedVersion(t *testing.T) {
+	original := version
+	t.Cleanup(func() { version = original })
+
+	version = "1.2.3"
+	if got := resolvedVersion(); got != "1.2.3" {
+		t.Errorf("an injected version must win, got %q", got)
+	}
+	code, stdout, _ := runCLI(t, "version")
+	if code != exitOK || stdout != "1.2.3\n" {
+		t.Errorf("version command: code = %d, stdout = %q", code, stdout)
+	}
+
+	version = "dev"
+	if got := resolvedVersion(); got != "dev" {
+		t.Errorf("a test binary has no module version, got %q", got)
+	}
+}
