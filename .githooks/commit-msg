@@ -1,6 +1,6 @@
 #!/bin/sh
 message_file="$1"
-lowered=$(LC_ALL=C tr 'A-Z' 'a-z' < "$message_file")
+lowered=$(LC_ALL=C tr '[:upper:]' '[:lower:]' < "$message_file")
 
 for pattern in 'co-authored-by' 'generated with'; do
 	if printf '%s\n' "$lowered" | LC_ALL=C grep -qF -e "$pattern"; then

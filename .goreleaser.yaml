@@ -40,9 +40,12 @@ sboms:
   - artifacts: archive
 
 release:
+  github:
+    owner: ryankshah
+    name: jackproof
   draft: true
 
-brews:
+homebrew_casks:
   - name: jackproof
     repository:
       owner: ryankshah
@@ -50,6 +53,3 @@ brews:
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     homepage: https://github.com/ryankshah/jackproof
     description: Find, score, detect and respond to LLMjacking risk.
-    license: Apache-2.0
-    test: |
-      system "#{bin}/jackproof", "version"

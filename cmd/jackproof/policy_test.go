@@ -284,7 +284,7 @@ func TestReleaseConfiguration(t *testing.T) {
 	if env := build["env"].([]any); len(env) != 1 || env[0] != "CGO_ENABLED=0" {
 		t.Errorf("env = %v", env)
 	}
-	for _, key := range []string{"checksum", "sboms", "brews", "archives"} {
+	for _, key := range []string{"checksum", "sboms", "homebrew_casks", "archives"} {
 		if _, ok := config[key]; !ok {
 			t.Errorf("%s is missing from the release configuration", key)
 		}
