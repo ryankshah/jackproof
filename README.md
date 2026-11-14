@@ -211,7 +211,7 @@ Exit code 0 means no finding at or above `--fail-on` (default `high`), 1 means f
 - Provider key formats, cloud permission names and log event names are marked `verified: false` until they are confirmed against official documentation. [docs/unverified.md](docs/unverified.md) lists them, and affected findings carry the `unverified-rule` flag.
 - `scan` and `posture` are static analysis. Terraform is evaluated on a best-effort basis. Values from modules, remote state and runtime inputs are not resolved.
 - Context-only keys, which have no distinctive prefix, are matched by variable name and reported with medium confidence.
-- `posture` reads infrastructure code. Its opt-in `--live` mode makes one signed, read-only request that checks AWS Bedrock invocation logging in one region. It has no other live checks and does not cover GCP or Azure. Guardrails, budgets and quotas defined outside the scanned paths are reported as incomplete.
+- `posture` reads infrastructure code. Its opt-in `--live` mode adds read-only checks of model invocation logging: AWS Bedrock in one region, Vertex AI Data Access audit logs in one project, and the Azure OpenAI diagnostic settings of one subscription. It has no other live checks. Guardrails, budgets and quotas defined outside the scanned paths are reported as incomplete.
 - `hunt` analyses exported logs. The Azure Activity Log does not record model invocations, so Azure coverage is limited to enablement and key operations.
 - The only network calls are the opt-in checks of `exposure verify` and `posture --live`.
 

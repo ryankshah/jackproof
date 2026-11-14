@@ -590,3 +590,33 @@ func TestReportInputErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestPostureLiveModeForGoogleAndAzureNeedsTokens(t *testing.T) {
+	dir := writeTree(t, map[string]string{"main.tf": "variable \"x\" {}\n"})
+	t.Setenv("AWS_ACCESS_KEY_ID", "")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "")
+	t.Setenv("GOOGLE_OAUTH_ACCESS_TOKEN", "")
+	t.Setenv("AZURE_ACCESS_TOKEN", "")
+	tests := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{"google without a token", []string{"posture", "--live", "--gcp-project", "p", dir}, "GOOGLE_OAUTH_ACCESS_TOKEN"},
+		{"azure without a token", []string{"posture", "--live", "--azure-subscription", "s", dir}, "AZURE_ACCESS_TOKEN"},
+		{"nothing to check", []string{"posture", "--live", dir}, "--gcp-project"},
+		{"aws region without credentials", []string{"posture", "--live", "--region", "us-east-1", dir}, "AWS_ACCESS_KEY_ID"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			code, _, stderr := runCLI(t, tt.args...)
+			if code != exitUsage || !strings.Contains(stderr, tt.want) {
+				t.Errorf("code = %d, stderr = %q, want %q", code, stderr, tt.want)
+			}
+		})
+	}
+	code, stdout, _ := runCLI(t, "posture", "-h")
+	if code != exitOK || !strings.Contains(stdout, "-gcp-project") || !strings.Contains(stdout, "-azure-subscription") {
+		t.Errorf("help lacks the new flags: %s", stdout)
+	}
+}
