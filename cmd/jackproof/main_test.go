@@ -367,16 +367,16 @@ func TestReportCombinesScanAndPosture(t *testing.T) {
 	}
 }
 
-func trailRecord(id, name, source, time, ip string) string {
-	return `{"eventID":"` + id + `","eventTime":"` + time + `","eventSource":"` + source + `","eventName":"` + name + `","awsRegion":"us-east-1","sourceIPAddress":"` + ip + `",` +
+func trailRecord(id, name, source, time string) string {
+	return `{"eventID":"` + id + `","eventTime":"` + time + `","eventSource":"` + source + `","eventName":"` + name + `","awsRegion":"us-east-1","sourceIPAddress":"203.0.113.5",` +
 		`"userAgent":"sdk","recipientAccountId":"111122223333","userIdentity":{"arn":"arn:aws:iam::111122223333:role/chat","accountId":"111122223333"}}`
 }
 
 func TestHuntCommand(t *testing.T) {
 	trail := `{"Records":[` + strings.Join([]string{
-		trailRecord("e1", "PutFoundationModelEntitlement", "bedrock.amazonaws.com", "2026-03-01T10:00:00Z", "203.0.113.5"),
-		trailRecord("e2", "InvokeModel", "bedrock.amazonaws.com", "2026-03-01T10:05:00Z", "203.0.113.5"),
-		trailRecord("e3", "DescribeInstances", "ec2.amazonaws.com", "2026-03-01T10:06:00Z", "203.0.113.5"),
+		trailRecord("e1", "PutFoundationModelEntitlement", "bedrock.amazonaws.com", "2026-03-01T10:00:00Z"),
+		trailRecord("e2", "InvokeModel", "bedrock.amazonaws.com", "2026-03-01T10:05:00Z"),
+		trailRecord("e3", "DescribeInstances", "ec2.amazonaws.com", "2026-03-01T10:06:00Z"),
 	}, ",") + `]}`
 	dir := t.TempDir()
 	logPath := filepath.Join(dir, "trail.json")
@@ -529,8 +529,8 @@ func TestReportCoversAllFourModules(t *testing.T) {
 		"jackproof.yaml": "environments:\n  prod: [\"prod/**\"]\nexpected_providers:\n  prod: []\n",
 	})
 	trail := `{"Records":[` + strings.Join([]string{
-		trailRecord("e1", "PutFoundationModelEntitlement", "bedrock.amazonaws.com", "2026-03-01T10:00:00Z", "203.0.113.5"),
-		trailRecord("e2", "InvokeModel", "bedrock.amazonaws.com", "2026-03-01T10:05:00Z", "203.0.113.5"),
+		trailRecord("e1", "PutFoundationModelEntitlement", "bedrock.amazonaws.com", "2026-03-01T10:00:00Z"),
+		trailRecord("e2", "InvokeModel", "bedrock.amazonaws.com", "2026-03-01T10:05:00Z"),
 	}, ",") + `]}`
 	logPath := filepath.Join(t.TempDir(), "trail.json")
 	if err := os.WriteFile(logPath, []byte(trail), 0o600); err != nil {
