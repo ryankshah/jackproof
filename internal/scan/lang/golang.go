@@ -54,7 +54,7 @@ func (e *Extractor) goImports(file *ast.File) map[string]string {
 			continue
 		}
 		for _, rule := range e.clients[Go] {
-			if rule.Import != importPath {
+			if !importMatches(importPath, rule.Import) {
 				continue
 			}
 			local := rule.Package
@@ -65,6 +65,22 @@ func (e *Extractor) goImports(file *ast.File) map[string]string {
 		}
 	}
 	return imports
+}
+
+func importMatches(importPath, base string) bool {
+	if importPath == base {
+		return true
+	}
+	version, found := strings.CutPrefix(importPath, base+"/v")
+	if !found || version == "" {
+		return false
+	}
+	for _, digit := range version {
+		if digit < '0' || digit > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *goState) visit(node ast.Node) bool {

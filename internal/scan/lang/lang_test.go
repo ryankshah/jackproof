@@ -379,3 +379,27 @@ func TestLookupPatternsAreValidated(t *testing.T) {
 		t.Errorf("unverified lookups = %v", got)
 	}
 }
+
+func TestImportMatches(t *testing.T) {
+	tests := []struct {
+		name       string
+		importPath string
+		base       string
+		want       bool
+	}{
+		{"exact", "github.com/openai/openai-go", "github.com/openai/openai-go", true},
+		{"major version suffix", "github.com/openai/openai-go/v3", "github.com/openai/openai-go", true},
+		{"two digit major version", "github.com/openai/openai-go/v12", "github.com/openai/openai-go", true},
+		{"sub package", "github.com/openai/openai-go/option", "github.com/openai/openai-go", false},
+		{"version suffix with letters", "github.com/openai/openai-go/v3x", "github.com/openai/openai-go", false},
+		{"empty version", "github.com/openai/openai-go/v", "github.com/openai/openai-go", false},
+		{"different module", "github.com/openai/openai-python", "github.com/openai/openai-go", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := importMatches(tt.importPath, tt.base); got != tt.want {
+				t.Errorf("importMatches(%q, %q) = %v, want %v", tt.importPath, tt.base, got, tt.want)
+			}
+		})
+	}
+}
