@@ -41,9 +41,10 @@ type Leak struct {
 }
 
 type Facts struct {
-	EnvReads []EnvRead
-	Clients  []Client
-	Leaks    []Leak
+	EnvReads      []EnvRead
+	Clients       []Client
+	Leaks         []Leak
+	SecretLookups []SecretLookup
 }
 
 type clientRule struct {
@@ -58,6 +59,7 @@ type clientRule struct {
 
 type Extractor struct {
 	clients         map[string][]clientRule
+	lookupRules     []lookupRule
 	isCredentialEnv func(string) bool
 }
 
@@ -90,19 +92,32 @@ func newExtractor(data []byte, isCredentialEnv func(string) bool) (*Extractor, e
 			}
 		}
 	}
-	return &Extractor{clients: clients, isCredentialEnv: isCredentialEnv}, nil
+	lookupRules, err := parseLookups(embeddedLookups)
+	if err != nil {
+		return nil, err
+	}
+	return &Extractor{clients: clients, lookupRules: lookupRules, isCredentialEnv: isCredentialEnv}, nil
 }
 
 func (e *Extractor) Extract(language string, data []byte) (Facts, error) {
+	var facts Facts
+	var comment string
 	switch language {
 	case Go:
-		return e.extractGo(data)
+		parsed, err := e.extractGo(data)
+		if err != nil {
+			return Facts{}, err
+		}
+		facts, comment = parsed, "//"
 	case Python:
-		return e.extractLines(data, pythonSyntax(), e.clients[Python]), nil
+		facts, comment = e.extractLines(data, pythonSyntax(), e.clients[Python]), "#"
 	case JavaScript:
-		return e.extractLines(data, javascriptSyntax(), e.clients[JavaScript]), nil
+		facts, comment = e.extractLines(data, javascriptSyntax(), e.clients[JavaScript]), "//"
+	default:
+		return Facts{}, fmt.Errorf("unsupported language %q", language)
 	}
-	return Facts{}, fmt.Errorf("unsupported language %q", language)
+	facts.SecretLookups = e.lookups(data, comment)
+	return facts, nil
 }
 
 func (e *Extractor) UnverifiedClients() []string {

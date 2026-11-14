@@ -15,18 +15,19 @@ import (
 )
 
 const (
-	ruleLocated        = "JP-EXP-001"
-	ruleNotFound       = "JP-EXP-002"
-	maxLocations       = 200
-	maxEvidence        = 10
-	stdinSource        = "stdin"
-	fingerprintKind    = "fingerprint"
-	nameKind           = "name"
-	maxExcerptLength   = 160
-	roleDefinition     = "definition"
-	roleInjection      = "injection"
-	roleReference      = "reference"
-	identifierSpecials = "_-"
+	ruleLocated           = "JP-EXP-001"
+	ruleNotFound          = "JP-EXP-002"
+	maxLocations          = 200
+	maxEvidence           = 10
+	stdinSource           = "stdin"
+	fingerprintKind       = "fingerprint"
+	nameKind              = "name"
+	maxExcerptLength      = 160
+	roleDefinition        = "definition"
+	roleInjection         = "injection"
+	roleReference         = "reference"
+	identifierSpecials    = "_-"
+	awsSecretSuffixLength = 7
 )
 
 type Source struct {
@@ -211,13 +212,23 @@ func matches(credential graph.Credential, target Target) bool {
 }
 
 func referenceNames(identity string) []string {
-	_, rest, found := strings.Cut(identity, ":")
+	kind, rest, found := strings.Cut(identity, ":")
 	if !found {
 		return []string{identity}
 	}
 	names := []string{rest}
-	if secretName, key, hasKey := strings.Cut(rest, "/"); hasKey {
-		names = append(names, secretName, key)
+	switch kind {
+	case "k8s-secret":
+		if secretName, key, hasKey := strings.Cut(rest, "/"); hasKey {
+			names = append(names, secretName, key)
+		}
+	case "aws-secret":
+		if _, name, isARN := strings.Cut(rest, ":secret:"); isARN {
+			names = append(names, name)
+			if cut := len(name) - awsSecretSuffixLength; cut > 0 && name[cut] == '-' {
+				names = append(names, name[:cut])
+			}
+		}
 	}
 	return names
 }

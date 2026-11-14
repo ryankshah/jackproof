@@ -1,0 +1,12 @@
+- store: aws-secret
+  pattern: '(?:SecretId|secret_id|secretId)\s*[:=]\s*(?:aws\.String\()?\s*["''`]([^"''`]+)["''`]'
+  verified: false
+- store: gcp-secret
+  pattern: 'secrets/([A-Za-z0-9_-]+)/versions'
+  verified: false
+- store: azure-secret
+  pattern: '(?:get_secret|getSecret|GetSecret)\(\s*(?:[A-Za-z_.]+,\s*)?["'']([^"'']+)["'']'
+  verified: false
+- store: vault-secret
+  pattern: '(?:read_secret_version|ReadSecret|readSecret)\(\s*(?:path\s*[:=]\s*)?["'']([^"'']+)["'']'
+  verified: false

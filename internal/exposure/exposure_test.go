@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -321,5 +322,90 @@ func TestAnalyzeRequiresRules(t *testing.T) {
 	}
 	if _, err := Analyze(result, nil, empty, secrets); err == nil {
 		t.Error("expected an error for a catalogue without the exposure rules")
+	}
+}
+
+func TestSecretManagerNamesMatchCodeAndArns(t *testing.T) {
+	root := t.TempDir()
+	files := map[string]string{
+		"svc/app.py":   "import boto3\nkey = boto3.client('secretsmanager').get_secret_value(SecretId='prod/openai-key')\n",
+		"infra/ecs.tf": "resource \"aws_ecs_task_definition\" \"chat\" {\n  family = \"chat\"\n  container_definitions = jsonencode([{\n    name = \"api\"\n    image = \"chat:1\"\n    secrets = [{ name = \"ANTHROPIC_API_KEY\", valueFrom = \"arn:aws:secretsmanager:us-east-1:111122223333:secret:prod/anthropic-AbCdEf\" }]\n  }])\n}\n",
+	}
+	for name, content := range files {
+		target := filepath.Join(root, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(target, []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cfg, _ := config.LoadIfPresent(root)
+	ruleSet, _ := rules.LoadEmbedded()
+	secrets, _ := secret.LoadCatalogue()
+	scanner, err := scan.New(cfg, ruleSet, secrets)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := scanner.Run([]string{root})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name     string
+		value    string
+		wantPath string
+		wantRole string
+	}{
+		{"code lookup by name", "prod/openai-key", "svc/app.py", roleInjection},
+		{"arn matched by plain name", "prod/anthropic", "infra/ecs.tf", roleInjection},
+		{"arn matched with its random suffix", "prod/anthropic-AbCdEf", "infra/ecs.tf", roleInjection},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			analysis, err := Analyze(result, []Target{{Kind: nameKind, Value: tt.value, Source: Source{Path: "names.txt", Line: 1}}}, ruleSet, secrets)
+			if err != nil {
+				t.Fatal(err)
+			}
+			found := false
+			for _, location := range analysis.Exposures[0].Locations {
+				if location.Path == tt.wantPath && location.Role == tt.wantRole {
+					found = true
+				}
+			}
+			if !found {
+				t.Errorf("locations = %+v", analysis.Exposures[0].Locations)
+			}
+		})
+	}
+	partial, err := Analyze(result, []Target{{Kind: nameKind, Value: "prod", Source: Source{Path: "names.txt", Line: 1}}}, ruleSet, secrets)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, location := range partial.Exposures[0].Locations {
+		if location.Role == roleInjection {
+			t.Errorf("a path prefix must not match a secret: %+v", location)
+		}
+	}
+}
+
+func TestReferenceNames(t *testing.T) {
+	tests := []struct {
+		identity string
+		want     []string
+	}{
+		{"env:OPENAI_API_KEY", []string{"OPENAI_API_KEY"}},
+		{"gha-secret:OPENAI_PROD_KEY", []string{"OPENAI_PROD_KEY"}},
+		{"k8s-secret:llm-keys/openai", []string{"llm-keys/openai", "llm-keys", "openai"}},
+		{"aws-secret:prod/openai-key", []string{"prod/openai-key"}},
+		{"aws-secret:arn:aws:secretsmanager:us-east-1:1:secret:prod/x-AbCdEf", []string{"arn:aws:secretsmanager:us-east-1:1:secret:prod/x-AbCdEf", "prod/x-AbCdEf", "prod/x"}},
+		{"plain", []string{"plain"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.identity, func(t *testing.T) {
+			if got := referenceNames(tt.identity); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("got %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

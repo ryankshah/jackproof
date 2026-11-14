@@ -648,3 +648,50 @@ func TestSharedSinkSeverityDependsOnTheSink(t *testing.T) {
 		t.Errorf("environment dump severity = %s, want medium", severity[".github/workflows/ci.yml"])
 	}
 }
+
+func TestSecretManagerLookupsLinkCodeToCredentials(t *testing.T) {
+	result := runScan(t, "environments:\n  prod: [\"svc/**\"]\n", map[string]string{
+		"svc/app.py":    "import boto3\nclient = boto3.client(\"secretsmanager\")\nkey = client.get_secret_value(SecretId=\"prod/openai-key\")\ndb = client.get_secret_value(SecretId=\"prod/database-password\")\n",
+		"svc/worker.go": "package main\n\nvar _ = Input{SecretId: aws.String(\"prod/openai-key\")}\n",
+		"svc/vault.js":  "const v = await client.getSecret('anthropic-prod-key');\n",
+		"svc/cloud.py":  "name = 'projects/p/secrets/aws-account-key/versions/latest'\n",
+	})
+	edges := make(map[string][]string)
+	for _, edge := range result.Graph.Edges() {
+		holder, _ := result.Graph.Holder(edge.Holder)
+		edges[edge.Credential] = append(edges[edge.Credential], holder.Name)
+	}
+	if got := edges["reference:aws-secret:prod/openai-key"]; len(got) != 2 {
+		t.Errorf("the OpenAI secret should be read by two files, got %v", got)
+	}
+	if got := edges["reference:azure-secret:anthropic-prod-key"]; len(got) != 1 {
+		t.Errorf("the Anthropic secret edges = %v", got)
+	}
+	if _, found := edges["reference:aws-secret:prod/database-password"]; found {
+		t.Error("a secret whose name does not identify a provider must not become a credential")
+	}
+	if _, found := edges["reference:gcp-secret:aws-account-key"]; found {
+		t.Error("cloud credentials must be named by their environment variable, not by a secret name")
+	}
+	credential := ""
+	for _, c := range result.Graph.Credentials() {
+		if c.Key == "reference:aws-secret:prod/openai-key" {
+			credential = c.Provider
+		}
+	}
+	if credential != "openai" {
+		t.Errorf("provider = %q", credential)
+	}
+	for _, holder := range result.Graph.Holders() {
+		if holder.Environment != "prod" {
+			t.Errorf("holder %s has environment %q", holder.Name, holder.Environment)
+		}
+	}
+}
+
+func TestFilesWithOnlyUnrelatedSecretLookupsCreateNoHolder(t *testing.T) {
+	result := runScan(t, "", map[string]string{"svc/app.py": "x = client.get_secret_value(SecretId=\"prod/database-password\")\n"})
+	if len(result.Graph.Holders()) != 0 || len(result.Graph.Credentials()) != 0 {
+		t.Errorf("holders %d, credentials %d", len(result.Graph.Holders()), len(result.Graph.Credentials()))
+	}
+}

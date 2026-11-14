@@ -96,6 +96,15 @@ The constructor calls that `scan` treats as use of a provider.
 - python code, provider openai
 - python code, provider together
 
+## Secret store lookup patterns
+
+The calls that `scan` treats as a read of a named secret. Only a secret whose name identifies an LLM provider becomes a credential in the graph.
+
+- aws-secret lookups
+- gcp-secret lookups
+- azure-secret lookups
+- vault-secret lookups
+
 ## Cloud permissions and roles
 
 The action names, permissions and managed roles that `posture` uses to decide what an identity can do.

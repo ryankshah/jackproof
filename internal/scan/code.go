@@ -38,7 +38,8 @@ func (r *run) processCode(file *sourceFile, hits []literalHit) {
 			r.coverage.AddSkipped(file.path, fmt.Sprintf("structure not analysed: %v", err))
 		}
 	}
-	if len(facts.EnvReads) == 0 && len(facts.Clients) == 0 && len(facts.Leaks) == 0 && len(hits) == 0 {
+	lookups := r.resolvableLookups(facts.SecretLookups)
+	if len(facts.EnvReads) == 0 && len(facts.Clients) == 0 && len(facts.Leaks) == 0 && len(lookups) == 0 && len(hits) == 0 {
 		return
 	}
 
@@ -62,6 +63,13 @@ func (r *run) processCode(file *sourceFile, hits []literalHit) {
 			Delivery: graph.DeliveryCodeRead,
 			Location: graph.Location{Path: file.path, Line: lineMap(read.Line)},
 		}, "env:"+read.Name, provider, false)
+	}
+	for _, lookup := range lookups {
+		r.bindReference(graph.Edge{
+			Holder:   holderID,
+			Delivery: graph.DeliveryCodeRead,
+			Location: graph.Location{Path: file.path, Line: lineMap(lookup.line)},
+		}, lookup.identity, lookup.provider, true)
 	}
 	for _, hit := range hits {
 		r.bindLiteral(graph.Edge{
@@ -192,4 +200,21 @@ func locateLine(rawLines []string, from int, line string) int {
 		}
 	}
 	return -1
+}
+
+type resolvedLookup struct {
+	identity string
+	provider string
+	line     int
+}
+
+func (r *run) resolvableLookups(lookups []lang.SecretLookup) []resolvedLookup {
+	var resolved []resolvedLookup
+	for _, lookup := range lookups {
+		provider, named := r.scanner.secrets.ProviderForName(lookup.Name)
+		if named && !cloudProviders[provider] {
+			resolved = append(resolved, resolvedLookup{identity: lookup.Store + ":" + lookup.Name, provider: provider, line: lookup.Line})
+		}
+	}
+	return resolved
 }

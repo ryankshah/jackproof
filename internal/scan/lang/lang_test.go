@@ -1,6 +1,7 @@
 package lang
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -320,5 +321,61 @@ func TestUnverifiedClients(t *testing.T) {
 	}
 	if !strings.Contains(strings.Join(list, ","), "python/anthropic") {
 		t.Errorf("list = %v", list)
+	}
+}
+
+func TestSecretLookups(t *testing.T) {
+	extractor := newTestExtractor(t)
+	tests := []struct {
+		name     string
+		language string
+		source   string
+		want     []SecretLookup
+	}{
+		{"python aws", Python, "client.get_secret_value(SecretId=\"prod/openai-key\")\n", []SecretLookup{{"aws-secret", "prod/openai-key", 1}}},
+		{"python gcp", Python, "name = f\"projects/p/secrets/anthropic-key/versions/latest\"\nclient.access_secret_version(name=name)\n", []SecretLookup{{"gcp-secret", "anthropic-key", 1}}},
+		{"python azure", Python, "secret = client.get_secret(\"openai-key\")\n", []SecretLookup{{"azure-secret", "openai-key", 1}}},
+		{"python vault", Python, "hvac.read_secret_version(path='kv/openai')\n", []SecretLookup{{"vault-secret", "kv/openai", 1}}},
+		{"javascript aws", JavaScript, "new GetSecretValueCommand({ SecretId: 'prod/groq' })\n", []SecretLookup{{"aws-secret", "prod/groq", 1}}},
+		{"javascript azure", JavaScript, "await client.getSecret(\"openai-key\");\n", []SecretLookup{{"azure-secret", "openai-key", 1}}},
+		{"go aws", Go, "package main\nvar _ = Input{SecretId: aws.String(\"prod/mistral\")}\n", []SecretLookup{{"aws-secret", "prod/mistral", 2}}},
+		{"go azure", Go, "package main\nfunc f() { c.GetSecret(ctx, \"openai-key\", \"\", nil) }\n", []SecretLookup{{"azure-secret", "openai-key", 2}}},
+		{"commented out", Python, "# client.get_secret_value(SecretId=\"old\")\n", nil},
+		{"no lookup", Python, "x = get_secret_value\nprint('secrets')\n", nil},
+		{"two on a line", JavaScript, "a(getSecret('one'), getSecret('two'))\n", []SecretLookup{{"azure-secret", "one", 1}, {"azure-secret", "two", 1}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			facts, err := extractor.Extract(tt.language, []byte(tt.source))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(facts.SecretLookups, tt.want) {
+				t.Errorf("lookups = %+v, want %+v", facts.SecretLookups, tt.want)
+			}
+		})
+	}
+}
+
+func TestLookupPatternsAreValidated(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+	}{
+		{"no store", "- {pattern: 'a(b)'}\n"},
+		{"bad regex", "- {store: s, pattern: '('}\n"},
+		{"no capture group", "- {store: s, pattern: 'abc'}\n"},
+		{"two capture groups", "- {store: s, pattern: '(a)(b)'}\n"},
+		{"unknown field", "- {store: s, pattern: '(a)', bogus: 1}\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, err := parseLookups([]byte(tt.yaml)); err == nil {
+				t.Error("expected an error")
+			}
+		})
+	}
+	if got := newTestExtractor(t).UnverifiedLookups(); len(got) != 4 {
+		t.Errorf("unverified lookups = %v", got)
 	}
 }

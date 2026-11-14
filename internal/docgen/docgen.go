@@ -122,6 +122,7 @@ func renderUnverified(catalogue *rules.Catalogue, providers *secret.Catalogue, e
 	section("Live verification endpoints", "The read-only request that `jackproof exposure verify` sends. The status codes that mean a key was rejected are also unconfirmed.", endpoints)
 
 	section("SDK client patterns", "The constructor calls that `scan` treats as use of a provider.", clientEntries(extractor.UnverifiedClients()))
+	section("Secret store lookup patterns", "The calls that `scan` treats as a read of a named secret. Only a secret whose name identifies an LLM provider becomes a credential in the graph.", lookupEntries(extractor.UnverifiedLookups()))
 	section("Cloud permissions and roles", "The action names, permissions and managed roles that `posture` uses to decide what an identity can do.", knowledge.UnverifiedEntries())
 	section("Log event and field names", "The names that `hunt` reads from exported logs.", source.UnverifiedNames())
 
@@ -143,5 +144,13 @@ func clientEntries(entries []string) []string {
 		out[i] = fmt.Sprintf("%s code, provider %s", language, provider)
 	}
 	sort.Strings(out)
+	return out
+}
+
+func lookupEntries(stores []string) []string {
+	out := make([]string, len(stores))
+	for i, store := range stores {
+		out[i] = store + " lookups"
+	}
 	return out
 }

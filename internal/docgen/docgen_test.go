@@ -61,7 +61,7 @@ func TestRulesDocumentListsEveryRule(t *testing.T) {
 
 func TestUnverifiedDocumentContent(t *testing.T) {
 	_, unverified := renderAll(t)
-	for _, want := range []string{"## Rules", "JP-KEY-001", "## Provider key formats", "anthropic, format api-key", "## Live verification endpoints", "api.openai.com", "## SDK client patterns", "python code, provider anthropic", "## Cloud permissions and roles", "## Log event and field names", "InvokeModel", "## Heuristics"} {
+	for _, want := range []string{"## Rules", "JP-KEY-001", "## Provider key formats", "anthropic, format api-key", "## Live verification endpoints", "api.openai.com", "## SDK client patterns", "python code, provider anthropic", "## Secret store lookup patterns", "aws-secret lookups", "## Cloud permissions and roles", "## Log event and field names", "InvokeModel", "## Heuristics"} {
 		if !strings.Contains(unverified, want) {
 			t.Errorf("unverified.md lacks %q", want)
 		}
