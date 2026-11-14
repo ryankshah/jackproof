@@ -1,11 +1,11 @@
 name: jackproof LLMjacking scan
-description: Report LLM credential and model-service risk that a pull request adds, comment the result once, and upload SARIF to code scanning.
+description: Report LLM credential and model-service risk that a pull request adds, with one comment and a SARIF upload.
 branding:
   icon: shield
   color: gray-dark
 inputs:
   version:
-    description: Version of jackproof to install, for example v1.0.1, or latest.
+    description: Version of jackproof to install, for example v1.0.2, or latest.
     default: latest
   fail-on:
     description: Lowest severity that fails the job when strict is true.

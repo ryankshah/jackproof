@@ -2,6 +2,12 @@
 
 This project follows semantic versioning. Entries list what changed for people who run the tool.
 
+## 1.0.2 - 2026-11-14
+
+### Changed
+
+- The GitHub Action description is shorter, to meet the GitHub Marketplace limit of 125 characters.
+
 ## 1.0.1 - 2026-11-14
 
 ### Changed
