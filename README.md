@@ -228,6 +228,7 @@ Rules are YAML files in `rules/`, one per rule, embedded at build time. Add a ru
 - [Rules](docs/rules.md)
 - [Unverified facts](docs/unverified.md)
 - [Dependencies](docs/dependencies.md)
+- [Changelog](CHANGELOG.md)
 - [Security policy](SECURITY.md)
 
 ## License

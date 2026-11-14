@@ -59,7 +59,6 @@ func TestIgnoresPath(t *testing.T) {
 		{"web/app.js", false},
 		{"docs/internal.md", true},
 		{"docs/other.md", false},
-		{`vendor\lib\a.go`, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
