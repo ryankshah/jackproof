@@ -171,20 +171,13 @@ func Load(sourceType, fileName string, data []byte, options UsageOptions) (Resul
 }
 
 func UnverifiedNames() []string {
-	var names []string
-	for name := range bedrockKinds {
-		names = append(names, "cloudtrail: bedrock.amazonaws.com "+name)
-	}
-	names = append(names,
+	names := []string{
+		"cloudtrail: bedrock.amazonaws.com PutFoundationModelEntitlement",
 		"cloudtrail: aws-marketplace.amazonaws.com Subscribe",
 		"cloudtrail: aws-marketplace.amazonaws.com AcceptAgreementRequest",
 		"cloudtrail: servicequotas.amazonaws.com requests for service code bedrock",
-		"cloudtrail: iam.amazonaws.com CreateAccessKey",
 		"gcp audit: aiplatform.googleapis.com and generativelanguage.googleapis.com prediction and listing methods",
-		"gcp audit: serviceusage.googleapis.com EnableService and BatchEnableServices",
-		"gcp audit: iam.googleapis.com CreateServiceAccountKey",
-		"azure activity log: Microsoft.CognitiveServices/accounts write, deployments write, listKeys and regenerateKey operations",
-	)
+	}
 	sort.Strings(names)
 	return names
 }

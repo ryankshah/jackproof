@@ -80,7 +80,7 @@ managed_policies:
     verified: true
   - arn: arn:aws:iam::aws:policy/PowerUserAccess
     actions: ["bedrock:*", "aws-marketplace:*"]
-    verified: false
+    verified: true
 
 gcp_roles:
   - name: roles/owner
@@ -93,36 +93,40 @@ gcp_roles:
     verified: false
   - name: roles/serviceusage.serviceUsageAdmin
     permissions: ["serviceusage.services.enable"]
-    verified: false
+    verified: true
   - name: roles/aiplatform.admin
     permissions: ["aiplatform.*"]
     broad: true
-    verified: false
+    verified: true
   - name: roles/aiplatform.user
     permissions: ["aiplatform.endpoints.predict"]
-    verified: false
+    verified: true
   - name: roles/iam.serviceAccountKeyAdmin
     permissions: ["iam.serviceAccountKeys.create"]
-    verified: false
+    verified: true
 
 azure_roles:
   - name: Owner
     actions: ["*"]
     broad: true
-    verified: false
+    verified: true
   - name: Contributor
     actions: ["Microsoft.CognitiveServices/*"]
     broad: true
-    verified: false
+    verified: true
   - name: Cognitive Services Contributor
     actions: ["Microsoft.CognitiveServices/*"]
-    verified: false
+    verified: true
   - name: Cognitive Services OpenAI Contributor
     actions: ["Microsoft.CognitiveServices/accounts/OpenAI/*", "Microsoft.CognitiveServices/accounts/deployments/write"]
-    verified: false
+    verified: true
   - name: Cognitive Services OpenAI User
-    actions: ["Microsoft.CognitiveServices/accounts/OpenAI/*"]
-    verified: false
+    actions:
+      - Microsoft.CognitiveServices/accounts/OpenAI/*/read
+      - Microsoft.CognitiveServices/accounts/OpenAI/deployments/chat/completions/action
+      - Microsoft.CognitiveServices/accounts/OpenAI/deployments/completions/action
+      - Microsoft.CognitiveServices/accounts/OpenAI/deployments/embeddings/action
+    verified: true
 
 services:
   - id: bedrock

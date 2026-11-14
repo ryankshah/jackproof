@@ -64,7 +64,7 @@ Credential graph
 Coverage
   files scanned: 1 (dotenv 1)
   rules not verified against provider documentation: JP-KEY-001
-  not verified against provider documentation: 17 provider key formats, 25 SDK client patterns
+  not verified against provider documentation: 16 provider key formats, 11 SDK client patterns
 ```
 
 Add a Compose file, Kubernetes manifest, GitHub Actions workflow, Dockerfile or Terraform and the graph also lists each holder, its environment and whether it may run untrusted code.
@@ -110,7 +110,7 @@ MEDIUM   JP-POS-002  No AWS guardrail denies model services in the scanned infra
 Coverage
   files scanned: 1 (terraform 1)
   rules not verified against provider documentation: JP-POS-001, JP-POS-002, JP-POS-003, JP-POS-004, JP-POS-005, JP-POS-006, JP-POS-007
-  not verified against provider documentation: 12 cloud permission entries
+  not verified against provider documentation: 2 cloud permission entries
 ```
 
 Each finding ships a ready-to-apply snippet in the `md`, `json` and `html` formats and in `jackproof explain`: a service control policy, an organization policy, a budget block or a logging configuration.
@@ -154,7 +154,7 @@ If it is abused: Model inference billed to the Anthropic workspace or organizati
 Coverage
   files scanned: 1 (dotenv 1)
   rules not verified against provider documentation: JP-KEY-001
-  not verified against provider documentation: 17 provider key formats, 25 SDK client patterns
+  not verified against provider documentation: 16 provider key formats, 11 SDK client patterns
 ```
 
 To check that the old key is dead, run `jackproof exposure verify --keys-stdin --verify-live --i-own-these-keys`. It sends one read-only metadata request per key and never calls a model. A rejected result is the only proof that a key is dead.
@@ -227,6 +227,7 @@ Rules are YAML files in `rules/`, one per rule, embedded at build time. Add a ru
 - [Threat model](docs/threat-model.md)
 - [Rules](docs/rules.md)
 - [Unverified facts](docs/unverified.md)
+- [Verification record](docs/verification.md)
 - [Dependencies](docs/dependencies.md)
 - [Changelog](CHANGELOG.md)
 - [Security policy](SECURITY.md)
