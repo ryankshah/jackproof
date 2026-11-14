@@ -22,7 +22,7 @@ Flags may come before or after paths. Exit code 0 means no finding at or above `
 - `hunt export-sigma`: Sigma rules for the detections.
 - `exposure [path...]`: needs at least one of `--fingerprints file`, `--secret-names file` or `--keys-stdin`. `--fp-algo` names the algorithm of the fingerprints: `sha256` (default), `sha1` or `sha512`. A SHA-256 fingerprint may be the full digest or its first 16 characters.
 - `exposure verify`: needs `--keys-stdin`, `--verify-live` and `--i-own-these-keys`. Sends one read-only metadata request per key to its provider, never calls a model, and exits with status 1 unless every key is rejected.
-- `report [path...]`: scan and posture in one report.
+- `report [path...]`: all four modules in one report. Scan and posture always run. `--logs file` (repeatable) with `--logs-source type` adds hunt, and it cross-references the scan graph on its own. `--fingerprints`, `--secret-names` or `--keys-stdin` adds exposure and the rotation plan. `--asn-map` and `--usage-columns` work as they do for `hunt`.
 - `diff <base> <head>`: scan and posture at two revisions, each in an isolated git worktree. The report lists the findings that the head revision adds, and the extras list what was removed or changed. Only added findings affect the exit code.
 - `explain <finding-id> [path...]`: the full record of one finding. An id prefix of at least six characters is enough. Use `--from report.json` to read a saved JSON report instead of analysing again.
 - `rules list`, `rules show <id>`.

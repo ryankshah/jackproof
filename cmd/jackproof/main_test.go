@@ -520,3 +520,73 @@ func TestPostureLiveModeNeedsCredentialsAndRegion(t *testing.T) {
 		t.Errorf("help: code = %d, stdout = %s", code, stdout)
 	}
 }
+
+func TestReportCoversAllFourModules(t *testing.T) {
+	key := "sk-" + strings.Repeat("b", 48)
+	root := writeTree(t, map[string]string{
+		".env":           "OPENAI_API_KEY=" + key + "\n",
+		"prod/iam.tf":    postureFixture,
+		"jackproof.yaml": "environments:\n  prod: [\"prod/**\"]\nexpected_providers:\n  prod: []\n",
+	})
+	trail := `{"Records":[` + strings.Join([]string{
+		trailRecord("e1", "PutFoundationModelEntitlement", "bedrock.amazonaws.com", "2026-03-01T10:00:00Z", "203.0.113.5"),
+		trailRecord("e2", "InvokeModel", "bedrock.amazonaws.com", "2026-03-01T10:05:00Z", "203.0.113.5"),
+	}, ",") + `]}`
+	logPath := filepath.Join(t.TempDir(), "trail.json")
+	if err := os.WriteFile(logPath, []byte(trail), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	code, stdout, stderr := runCLIWithInput(t, key+"\n", "report", "--format", "json", "--fail-on", "critical",
+		"--logs", logPath, "--logs-source", "cloudtrail", "--keys-stdin", root)
+	if code != exitOK {
+		t.Fatalf("exit code = %d (stderr: %s)", code, stderr)
+	}
+	var decoded struct {
+		Findings []struct{ Rule string }
+		Extras   map[string]any
+		Coverage struct {
+			LogSources []string `json:"log_sources"`
+		}
+	}
+	if err := json.Unmarshal([]byte(stdout), &decoded); err != nil {
+		t.Fatal(err)
+	}
+	rules := make(map[string]bool)
+	for _, f := range decoded.Findings {
+		rules[f.Rule] = true
+	}
+	for _, want := range []string{"JP-KEY-001", "JP-POS-001", "JP-HUNT-001", "JP-HUNT-007", "JP-EXP-001"} {
+		if !rules[want] {
+			t.Errorf("rule %s is missing from %v", want, rules)
+		}
+	}
+	if _, ok := decoded.Extras["rotation_plan"]; !ok || len(decoded.Coverage.LogSources) != 1 {
+		t.Errorf("extras = %v, log sources = %v", decoded.Extras, decoded.Coverage.LogSources)
+	}
+	if strings.Contains(stdout, key) {
+		t.Error("the report contains the full key")
+	}
+}
+
+func TestReportInputErrors(t *testing.T) {
+	root := writeTree(t, map[string]string{"main.go": "package main\n"})
+	tests := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{"logs without a source", []string{"report", "--logs", "x.json", root}, "--logs needs --logs-source"},
+		{"unknown log source", []string{"report", "--logs", "x.json", "--logs-source", "syslog", root}, "read log file"},
+		{"bad usage columns", []string{"report", "--usage-columns", "oops", root}, "--usage-columns"},
+		{"bad fingerprints file", []string{"report", "--fingerprints", filepath.Join(t.TempDir(), "none.txt"), root}, "read fingerprints"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			code, _, stderr := runCLI(t, tt.args...)
+			if code != exitUsage || !strings.Contains(stderr, tt.want) {
+				t.Errorf("code = %d, stderr = %q, want %q", code, stderr, tt.want)
+			}
+		})
+	}
+}

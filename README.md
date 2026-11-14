@@ -197,7 +197,7 @@ Coverage
 
 | Command | Purpose |
 | --- | --- |
-| `report` | One report across scan and posture. Formats: `md`, `html`, `json`, `sarif`, `text` |
+| `report` | One report across all modules. Scan and posture always run. Add `--logs` with `--logs-source` for hunt, and `--fingerprints`, `--secret-names` or `--keys-stdin` for exposure. Formats: `md`, `html`, `json`, `sarif`, `text` |
 | `diff <base> <head>` | Findings added between two git revisions, each checked out in an isolated worktree |
 | `explain <finding-id> [path...]` | Full evidence, method, flags, unproven items and fix for one finding |
 | `rules list`, `rules show <id>` | The rule catalogue |

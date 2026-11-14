@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/ryankshah/jackproof/internal/finding"
+	"github.com/ryankshah/jackproof/internal/graph"
 	"github.com/ryankshah/jackproof/internal/hunt"
 	"github.com/ryankshah/jackproof/internal/hunt/source"
 )
@@ -39,43 +40,67 @@ func runHunt(args []string, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
-
-	var events []source.Event
-	var coverage finding.Coverage
-	for _, file := range files {
-		data, err := os.ReadFile(file)
-		if err != nil {
-			return fmt.Errorf("read log file: %w", err)
-		}
-		loaded, err := source.Load(*sourceType, file, data, source.UsageOptions{Columns: columns})
-		if err != nil {
-			return err
-		}
-		events = append(events, loaded.Events...)
-		coverage.LogSources = append(coverage.LogSources, describeSource(*sourceType, file, loaded))
-		if span, ok := timeRange(file, loaded.Events); ok {
-			coverage.TimeRanges = append(coverage.TimeRanges, span)
-		}
-	}
-
-	networks, err := loadNetworks(kit.cfg.Hunt.KnownNetworks, *networkMap)
-	if err != nil {
-		return err
-	}
 	code, err := loadCodeMap(*graphPath)
 	if err != nil {
 		return err
 	}
-	findings, err := hunt.Analyze(events, hunt.Options{Config: kit.cfg, Rules: kit.rules, Networks: networks, Code: code})
+	findings, coverage, err := huntPass(kit, huntInput{sourceType: *sourceType, files: files, columns: columns, networkMap: *networkMap, code: code})
 	if err != nil {
-		return fmt.Errorf("analyse logs: %w", err)
+		return err
+	}
+	return emit(stdout, flags, kit, reportFor("jackproof hunt", findings, coverage))
+}
+
+type huntInput struct {
+	sourceType string
+	files      []string
+	columns    map[string]string
+	networkMap string
+	code       hunt.CodeMap
+}
+
+func huntPass(kit toolkit, input huntInput) ([]finding.Finding, finding.Coverage, error) {
+	var events []source.Event
+	var coverage finding.Coverage
+	for _, file := range input.files {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			return nil, coverage, fmt.Errorf("read log file: %w", err)
+		}
+		loaded, err := source.Load(input.sourceType, file, data, source.UsageOptions{Columns: input.columns})
+		if err != nil {
+			return nil, coverage, err
+		}
+		events = append(events, loaded.Events...)
+		coverage.LogSources = append(coverage.LogSources, describeSource(input.sourceType, file, loaded))
+		if span, ok := timeRange(file, loaded.Events); ok {
+			coverage.TimeRanges = append(coverage.TimeRanges, span)
+		}
+	}
+	networks, err := loadNetworks(kit.cfg.Hunt.KnownNetworks, input.networkMap)
+	if err != nil {
+		return nil, coverage, err
+	}
+	findings, err := hunt.Analyze(events, hunt.Options{Config: kit.cfg, Rules: kit.rules, Networks: networks, Code: input.code})
+	if err != nil {
+		return nil, coverage, fmt.Errorf("analyse logs: %w", err)
 	}
 	for _, rule := range kit.rules.Unverified() {
 		if rule.Module() == finding.ModuleHunt {
 			coverage.UnverifiedRules = append(coverage.UnverifiedRules, rule.ID)
 		}
 	}
-	return emit(stdout, flags, kit, reportFor("jackproof hunt", findings, coverage))
+	return findings, coverage, nil
+}
+
+func codeMapFromGraph(g *graph.Graph) hunt.CodeMap {
+	code := hunt.CodeMap{Loaded: true, Providers: make(map[string]bool)}
+	for _, holder := range g.Holders() {
+		for _, provider := range holder.Providers {
+			code.Providers[provider] = true
+		}
+	}
+	return code
 }
 
 func describeSource(sourceType, file string, loaded source.Result) string {

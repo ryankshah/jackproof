@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/ryankshah/jackproof/internal/exposure"
+	"github.com/ryankshah/jackproof/internal/finding"
 	"github.com/ryankshah/jackproof/internal/report"
 	"github.com/ryankshah/jackproof/internal/scan"
 	"github.com/ryankshah/jackproof/internal/secret"
@@ -40,30 +41,29 @@ func runExposure(args []string, stdin io.Reader, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
-	scanner, err := scan.New(kit.cfg, kit.rules, kit.secrets)
+	result, err := runScanner(kit, paths)
 	if err != nil {
-		return fmt.Errorf("prepare scan: %w", err)
-	}
-	result, err := scanner.Run(paths)
-	if err != nil {
-		return fmt.Errorf("scan: %w", err)
-	}
-	analysis, err := exposure.Analyze(result, targets, kit.rules, kit.secrets)
-	if err != nil {
-		return fmt.Errorf("analyse exposure: %w", err)
-	}
-
-	var plan bytes.Buffer
-	if err := analysis.Plan.WriteMarkdown(&plan); err != nil {
 		return err
 	}
-	rep := report.Report{
-		Title:    "jackproof exposure",
-		Findings: analysis.Findings,
-		Coverage: result.Coverage,
-		Extras:   []report.Extra{{Key: "rotation_plan", Title: "Rotation plan", Text: plan.String(), Data: analysis.Plan}},
+	findings, extra, err := exposurePass(kit, result, targets)
+	if err != nil {
+		return err
 	}
+	rep := reportFor("jackproof exposure", findings, result.Coverage)
+	rep.Extras = []report.Extra{extra}
 	return emit(stdout, flags, kit, rep)
+}
+
+func exposurePass(kit toolkit, result *scan.Result, targets []exposure.Target) ([]finding.Finding, report.Extra, error) {
+	analysis, err := exposure.Analyze(result, targets, kit.rules, kit.secrets)
+	if err != nil {
+		return nil, report.Extra{}, fmt.Errorf("analyse exposure: %w", err)
+	}
+	var plan bytes.Buffer
+	if err := analysis.Plan.WriteMarkdown(&plan); err != nil {
+		return nil, report.Extra{}, err
+	}
+	return analysis.Findings, report.Extra{Key: "rotation_plan", Title: "Rotation plan", Text: plan.String(), Data: analysis.Plan}, nil
 }
 
 func collectTargets(fingerprintsPath, namesPath string, keysStdin bool, algo string, stdin io.Reader) ([]exposure.Target, error) {

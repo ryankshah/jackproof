@@ -66,7 +66,7 @@ func dispatch(args []string, stdin io.Reader, stdout io.Writer) error {
 	case "scan":
 		return runScan(rest, stdout)
 	case "report":
-		return runReport(rest, stdout)
+		return runReport(rest, stdin, stdout)
 	case "posture":
 		return runPosture(rest, stdout)
 	case "diff":
